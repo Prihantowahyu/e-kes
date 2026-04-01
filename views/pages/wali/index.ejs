@@ -1,0 +1,159 @@
+<% activePage = 'wali' %>
+<%- include('../../partials/header') %>
+
+<!-- Pilih Kelas (untuk admin/tatib) -->
+<% if (user.role !== 'wali_kelas') { %>
+<div class="card mb-4">
+  <form method="GET" style="padding:14px 20px">
+    <div style="display:flex;gap:10px;align-items:center">
+      <label class="form-label" style="margin:0;white-space:nowrap">Lihat Kelas:</label>
+      <select name="kelas" class="form-control" style="width:160px" onchange="this.form.submit()">
+        <option value="">-- Pilih Kelas --</option>
+        <% kelasList.forEach(k => { %><option value="<%= k.kelas %>" <%= kelasFilter===k.kelas?'selected':'' %>><%= k.kelas %></option><% }) %>
+      </select>
+    </div>
+  </form>
+</div>
+<% } %>
+
+<% if (!kelasFilter) { %>
+<div class="empty-state" style="padding:60px"><div class="empty-icon">🏫</div><h4>Pilih kelas untuk melihat data</h4></div>
+<% } else { %>
+
+<!-- Stats Kelas -->
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-users" style="color:var(--blue)"></i></div>
+    <div><div class="stat-value"><%= stats.totalSiswa %></div><div class="stat-label">Siswa Aktif</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-exclamation" style="color:var(--accent)"></i></div>
+    <div><div class="stat-value"><%= stats.totalPel %></div><div class="stat-label">Pelanggaran Bulan Ini</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-user-times" style="color:var(--accent2)"></i></div>
+    <div><div class="stat-value"><%= stats.totalAlpha %></div><div class="stat-label">Alpha Bulan Ini</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-file-alt" style="color:#7b1fa2"></i></div>
+    <div><div class="stat-value"><%= stats.totalSP %></div><div class="stat-label">SP Aktif</div></div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+  <div>
+    <!-- Kehadiran Hari Ini -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="fas fa-calendar-day" style="color:var(--green)"></i>
+        <span class="card-title">Kehadiran Hari Ini — <%= today %></span>
+        <span class="badge badge-info"><%= kehadiranHariIni.length %> records</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Nama</th><th>Status</th><th>Jam Ke</th><th>Keterangan</th></tr></thead>
+          <tbody>
+            <% if (kehadiranHariIni.length) { kehadiranHariIni.forEach(k => { %>
+            <tr>
+              <td><strong><%= k.nama_siswa %></strong><div class="mono text-sm text-muted"><%= k.nis %></div></td>
+              <td>
+                <% const stB={Hadir:'success',Alpha:'danger',Terlambat:'warning',Izin:'info',Sakit:'teal',Bolos:'danger'} %>
+                <span class="badge badge-<%= stB[k.status_kehadiran]||'gray' %>"><%= k.status_kehadiran %></span>
+              </td>
+              <td class="text-sm"><%= k.jam_ke||'Penuh Hari' %></td>
+              <td class="text-sm text-muted"><%= k.keterangan||'-' %></td>
+            </tr>
+            <% }) } else { %>
+            <tr><td colspan="4" class="text-center text-muted" style="padding:20px">Belum ada data kehadiran hari ini</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pelanggaran Bulan Ini -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="fas fa-exclamation-triangle" style="color:var(--accent)"></i>
+        <span class="card-title">Pelanggaran Bulan Ini</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Siswa</th><th>Jenis</th><th>Tanggal</th><th>Status</th></tr></thead>
+          <tbody>
+            <% if (pelanggaran.length) { pelanggaran.forEach(p => { %>
+            <tr>
+              <td><strong><%= p.nama_siswa %></strong></td>
+              <td><% const jB={Alpha:'danger',Terlambat:'warning',Bolos:'danger',Izin:'info',Sakit:'teal',Lainnya:'gray'} %><span class="badge badge-<%= jB[p.jenis_pelanggaran]||'gray' %>"><%= p.jenis_pelanggaran %></span></td>
+              <td><%= p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+              <td><span class="badge <%= p.status==='Terkonfirmasi'?'badge-success':'badge-warning' %>"><%= p.status %></span></td>
+            </tr>
+            <% }) } else { %>
+            <tr><td colspan="4" class="text-center text-muted" style="padding:16px">Tidak ada pelanggaran bulan ini ✅</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar: SP Aktif + Top Bermasalah -->
+  <div>
+    <!-- Top Bermasalah -->
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-trophy" style="color:var(--accent)"></i><span class="card-title">Top Pelanggaran</span></div>
+      <div class="card-body">
+        <% if (topBermasalah.length) { topBermasalah.forEach((t,i) => { %>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span style="font-size:16px"><%= i===0?'🥇':i===1?'🥈':i===2?'🥉':'🔸' %></span>
+          <div style="flex:1">
+            <a href="/wali/siswa/<%= t.nis %>" style="font-weight:600;font-size:13px;color:var(--blue);text-decoration:none"><%= t.nama_siswa %></a>
+          </div>
+          <span class="badge badge-danger"><%= t.jumlah %>×</span>
+        </div>
+        <% }) } else { %>
+        <div class="text-center text-muted text-sm" style="padding:12px">Tidak ada ✅</div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- SP Aktif -->
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-file-alt" style="color:#7b1fa2"></i><span class="card-title">SP Aktif</span></div>
+      <div class="card-body">
+        <% if (sp.length) { sp.forEach(s => { %>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;border-left:3px solid #c62828">
+          <div style="font-weight:700;font-size:13px"><%= s.nama_siswa %></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span class="badge badge-danger"><%= s.tipe_sp %></span>
+            <span class="text-sm text-muted"><%= s.tanggal_sp ? new Date(s.tanggal_sp).toLocaleDateString('id-ID') : '-' %></span>
+          </div>
+        </div>
+        <% }) } else { %>
+        <div class="text-center text-muted text-sm" style="padding:12px">Tidak ada SP aktif ✅</div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Daftar Siswa -->
+    <div class="card">
+      <div class="card-header"><i class="fas fa-users" style="color:var(--blue)"></i><span class="card-title">Daftar Siswa (<%= siswa.length %>)</span></div>
+      <div class="card-body" style="padding:8px">
+        <% siswa.forEach(s => { %>
+        <a href="/wali/siswa/<%= s.nis %>" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;text-decoration:none;color:var(--text);transition:background .15s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+          <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--navy-mid));display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0"><%= s.nama.charAt(0) %></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= s.nama %></div>
+            <div class="mono text-sm text-muted"><%= s.nis %></div>
+          </div>
+          <i class="fas fa-chevron-right" style="color:var(--text3);font-size:11px"></i>
+        </a>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% } %>
+
+<%- include('../../partials/footer') %>

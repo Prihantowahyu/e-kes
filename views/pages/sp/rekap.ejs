@@ -1,0 +1,160 @@
+<% activePage = 'sp' %>
+<%- include('../../partials/header') %>
+
+<div style="display:flex;gap:10px;margin-bottom:16px">
+  <a href="/sp" class="btn btn-outline btn-sm"><i class="fas fa-list"></i> Daftar SP</a>
+  <a href="/sp/rekap" class="btn btn-primary btn-sm"><i class="fas fa-chart-bar"></i> Rekap & Buat SP</a>
+</div>
+
+<div class="alert alert-info">
+  <i class="fas fa-info-circle"></i>
+  <strong>Kriteria otomatis SP:</strong> Alpha ≥ <%= BATAS_ALPHA %> kali &nbsp;|&nbsp; Terlambat ≥ <%= BATAS_TERLAMBAT %> kali &nbsp;|&nbsp; Pelanggaran lainnya > 0 (dihitung sejak SP terakhir)
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-chart-bar" style="color:var(--blue)"></i>
+    <span class="card-title">Rekap Siswa Bermasalah (<%= rekap.length %>)</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Siswa</th><th>Kelas</th><th>Level SP</th>
+          <th>Total Pelanggaran</th><th>Periode Ini</th><th>Status</th><th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (rekap.length) { rekap.forEach((r, i) => { %>
+        <tr style="<%= r.eligible ? 'background:#fff8e1' : '' %>">
+          <td class="text-muted text-sm"><%= i+1 %></td>
+          <td>
+            <a href="/siswa/<%= r.nis %>" style="font-weight:600;color:var(--blue);text-decoration:none"><%= r.nama || r.Nama %></a>
+            <div class="mono text-sm text-muted"><%= r.nis || r.NIS %></div>
+          </td>
+          <td><span class="badge badge-info"><%= r.kelas || r.Kelas %></span></td>
+          <td>
+            <% const lvlColor = {0:'gray',1:'warning',2:'orange',3:'danger'} %>
+            <span class="badge badge-<%= lvlColor[r.levelSP]||'danger' %>"><%= r.labelSP %></span>
+          </td>
+          <td>
+            <div style="font-size:12px">
+              <span class="badge badge-danger" title="Alpha"><%= r.jumlahAlpha %> Alpha</span>
+              <span class="badge badge-warning" title="Terlambat"><%= r.jumlahTerlambat %> Terlambat</span>
+              <span class="badge badge-gray" title="Total"><%= r.jumlahTotal %> Total</span>
+            </div>
+          </td>
+          <td>
+            <div style="font-size:12px">
+              <span class="<%= r.alphaPeriode >= BATAS_ALPHA ? 'badge badge-danger' : 'badge badge-gray' %>"><%= r.alphaPeriode %> Alpha</span>
+              <span class="<%= r.terlambatPeriode >= BATAS_TERLAMBAT ? 'badge badge-danger' : 'badge badge-gray' %>"><%= r.terlambatPeriode %> Terlambat</span>
+            </div>
+          </td>
+          <td>
+            <% if (r.eligible) { %>
+              <span class="badge badge-danger"><i class="fas fa-exclamation"></i> Perlu <%= r.labelBaru %></span>
+            <% } else if (r.levelSP > 0) { %>
+              <span class="badge badge-warning">Sudah Ada SP</span>
+            <% } else { %>
+              <span class="badge badge-gray">Pantau</span>
+            <% } %>
+          </td>
+          <td>
+            <% if (r.eligible) { %>
+            <button class="btn btn-danger btn-xs" onclick="openBuatSP('<%= r.nis || r.NIS %>','<%= (r.nama || r.Nama).replace(/'/g,&quot;&#39;&quot;) %>','<%= r.kelas || r.Kelas %>','<%= r.labelBaru %>','<%= r.jumlahTotal %>','<%= r.alasanEligible || '' %>')">
+              <i class="fas fa-file-signature"></i> Buat <%= r.labelBaru %>
+            </button>
+            <% } else { %>
+            <a href="/siswa/<%= r.nis || r.NIS %>" class="btn btn-secondary btn-xs"><i class="fas fa-eye"></i> Detail</a>
+            <% } %>
+          </td>
+        </tr>
+        <% }) } else { %>
+        <tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🎉</div><h4>Tidak ada siswa yang perlu SP</h4></div></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Buat SP -->
+<div class="modal-overlay" id="modalBuatSP">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <span class="modal-title"><i class="fas fa-file-signature"></i> Buat Surat Peringatan</span>
+      <button class="modal-close" onclick="closeModal('modalBuatSP')">✕</button>
+    </div>
+    <form action="/sp" method="POST">
+      <input type="hidden" name="nis" id="spNis">
+      <div class="modal-body">
+        <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px">
+          <div id="spSiswaInfo" style="font-size:13.5px"></div>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label class="form-label">Tipe SP</label>
+            <select name="tipe_sp" class="form-control" id="spTipe">
+              <% ['SP 1','SP 2','SP 3','SP Tambahan'].forEach(t => { %>
+                <option value="<%= t %>"><%= t %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal SP</label>
+            <input type="date" name="tanggal_sp" class="form-control" value="<%= new Date().toISOString().split('T')[0] %>">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pelanggaran Pemicu</label>
+          <textarea name="pelanggaran_pemicu" class="form-control" id="spAlasan" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan Terlampir</label>
+          <textarea name="catatan_terlampir" class="form-control" rows="2" placeholder="Catatan tambahan untuk SP ini..."></textarea>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Catatan Penanganan</div>
+          <div class="form-row form-row-2">
+            <div class="form-group">
+              <label class="form-label">Catatan Siswa</label>
+              <textarea name="catatan_siswa" class="form-control" rows="1"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Catatan Ortu</label>
+              <textarea name="catatan_ortu" class="form-control" rows="1"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Catatan Wali Kelas</label>
+              <textarea name="catatan_wali_kelas" class="form-control" rows="1"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Catatan Tatib</label>
+              <textarea name="catatan_tatib" class="form-control" rows="1"></textarea>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" name="jumlah_pelanggaran" id="spJmlPel">
+        <input type="hidden" name="dibuat_oleh" value="<%= user.nama %>">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalBuatSP')">Batal</button>
+        <button type="submit" class="btn btn-danger"><i class="fas fa-file-signature"></i> Buat Surat Peringatan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openBuatSP(nis, nama, kelas, tipe, jml, alasan) {
+  document.getElementById('spNis').value = nis;
+  document.getElementById('spJmlPel').value = jml;
+  document.getElementById('spAlasan').value = alasan;
+  document.getElementById('spSiswaInfo').innerHTML =
+    `<strong>${nama}</strong> &nbsp;|&nbsp; Kelas: <span class="badge badge-info">${kelas}</span> &nbsp;|&nbsp; Akan dibuat: <span class="badge badge-danger">${tipe}</span>`;
+  const sel = document.getElementById('spTipe');
+  for (let o of sel.options) { if (o.value === tipe) { o.selected = true; break; } }
+  openModal('modalBuatSP');
+}
+</script>
+
+<%- include('../../partials/footer') %>

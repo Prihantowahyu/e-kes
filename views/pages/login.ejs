@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon-wrap">🏫</div>
+      <h1>Sistem Kesiswaan</h1>
+      <p>SMK Diponegoro Tumpang</p>
+    </div>
+
+    <% if (success_msg && success_msg.length) { %>
+      <div class="alert alert-success"><i class="fas fa-check-circle"></i> <%= success_msg[0] %></div>
+    <% } %>
+    <% if (error_msg && error_msg.length) { %>
+      <div class="alert alert-danger"><i class="fas fa-times-circle"></i> <%= error_msg[0] %></div>
+    <% } %>
+
+    <form action="/login" method="POST">
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-user"></i> Username</label>
+        <input type="text" name="username" class="form-control" placeholder="Masukkan username" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-lock"></i> Password</label>
+        <div style="position:relative">
+          <input type="password" name="password" id="pwdInput" class="form-control" placeholder="Masukkan password" required style="padding-right:40px">
+          <button type="button" onclick="togglePwd()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3)">
+            <i class="fas fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100" style="padding:11px;font-size:14px;margin-top:8px">
+        <i class="fas fa-sign-in-alt"></i> Masuk
+      </button>
+    </form>
+
+    <div class="login-divider">Informasi Default</div>
+    <div style="background:var(--bg);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text2)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span><strong>Admin:</strong> admin</span><span>Pass: admin123</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span><strong>Tatib:</strong> tatib</span><span>Pass: admin123</span>
+      </div>
+    </div>
+
+    <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:20px">
+      © 2024 SMK Diponegoro Tumpang — Sistem Kesiswaan
+    </p>
+  </div>
+</div>
+<script>
+function togglePwd() {
+  const i = document.getElementById('pwdInput');
+  const e = document.getElementById('eyeIcon');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  e.className = i.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
+</script>
+</body>
+</html>

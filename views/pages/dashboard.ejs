@@ -1,0 +1,174 @@
+<% activePage = 'dashboard' %>
+<%- include('../partials/header') %>
+
+<!-- STATS -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-user-graduate" style="color:#1565c0"></i></div>
+    <div>
+      <div class="stat-value"><%= stats.totalSiswa %></div>
+      <div class="stat-label">Total Siswa Aktif</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-exclamation-triangle" style="color:#c62828"></i></div>
+    <div>
+      <div class="stat-value"><%= stats.totalPelanggaran %></div>
+      <div class="stat-label">Total Pelanggaran</div>
+      <div class="stat-sub"><%= stats.belumKonfirmasi %> belum dikonfirmasi</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-file-alt" style="color:#7b1fa2"></i></div>
+    <div>
+      <div class="stat-value"><%= stats.totalSP %></div>
+      <div class="stat-label">Surat Peringatan Aktif</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-box-open" style="color:#e65100"></i></div>
+    <div>
+      <div class="stat-value"><%= stats.totalPenyitaan %></div>
+      <div class="stat-label">Barang Belum Dikembalikan</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-check-circle" style="color:#2e7d32"></i></div>
+    <div>
+      <div class="stat-value"><%= stats.hariIniHadir %></div>
+      <div class="stat-label">Hadir Hari Ini</div>
+      <div class="stat-sub"><%= today %></div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-user-times" style="color:#c62828"></i></div>
+    <div>
+      <div class="stat-value"><%= stats.hariIniAlpha %></div>
+      <div class="stat-label">Alpha Hari Ini</div>
+      <div class="stat-sub"><%= stats.hariIniTerlambat %> terlambat</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS + RECENT -->
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px">
+  <!-- Grafik 7 hari -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-chart-bar" style="color:var(--blue)"></i>
+      <span class="card-title">Pelanggaran 7 Hari Terakhir</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-container">
+        <canvas id="grafikChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <!-- Per jenis -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-chart-pie" style="color:var(--accent)"></i>
+      <span class="card-title">Per Jenis Pelanggaran</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-container" style="height:200px">
+        <canvas id="jenisChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Pelanggaran Terbaru -->
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-clock" style="color:var(--accent)"></i>
+    <span class="card-title">Pelanggaran Terbaru</span>
+    <a href="/pelanggaran" class="btn btn-outline btn-sm">Lihat Semua</a>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Kode</th><th>Siswa</th><th>Kelas</th><th>Jenis</th>
+          <th>Tanggal</th><th>Status</th><th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (recentPelanggaran.length) { %>
+          <% recentPelanggaran.forEach(p => { %>
+          <tr>
+            <td class="mono text-sm"><%= p.kode %></td>
+            <td><strong><%= p.nama_siswa %></strong></td>
+            <td><%= p.kelas %></td>
+            <td>
+              <% const jenisBadge = {Alpha:'danger',Terlambat:'warning',Bolos:'danger',Izin:'info',Sakit:'teal',Lainnya:'gray'} %>
+              <span class="badge badge-<%= jenisBadge[p.jenis_pelanggaran]||'gray' %>"><%= p.jenis_pelanggaran %></span>
+            </td>
+            <td><%= p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+            <td>
+              <% if (p.status === 'Terkonfirmasi') { %>
+                <span class="badge badge-success"><i class="fas fa-check"></i> Terkonfirmasi</span>
+              <% } else { %>
+                <span class="badge badge-warning"><i class="fas fa-clock"></i> Pending</span>
+              <% } %>
+            </td>
+            <td>
+              <a href="/siswa/<%= p.nis %>" class="btn btn-secondary btn-xs">
+                <i class="fas fa-eye"></i> Detail
+              </a>
+            </td>
+          </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="7"><div class="empty-state"><div class="empty-icon">✅</div><h4>Belum ada pelanggaran</h4></div></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// Grafik 7 hari
+const grafikData = <%- JSON.stringify(grafik) %>;
+const jenisData  = <%- JSON.stringify(byJenis) %>;
+
+new Chart(document.getElementById('grafikChart'), {
+  type: 'bar',
+  data: {
+    labels: grafikData.map(d => new Date(d.tgl).toLocaleDateString('id-ID',{day:'2-digit',month:'short'})),
+    datasets: [{
+      label: 'Jumlah Pelanggaran',
+      data: grafikData.map(d => d.jumlah),
+      backgroundColor: 'rgba(21,101,192,.15)',
+      borderColor: '#1565c0',
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+  }
+});
+
+const colors = ['#1565c0','#e53935','#2e7d32','#f9a825','#7b1fa2','#00796b'];
+new Chart(document.getElementById('jenisChart'), {
+  type: 'doughnut',
+  data: {
+    labels: jenisData.map(d => d.jenis_pelanggaran),
+    datasets: [{
+      data: jenisData.map(d => d.jumlah),
+      backgroundColor: colors,
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+    cutout: '65%'
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

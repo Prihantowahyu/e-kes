@@ -1,0 +1,107 @@
+<% activePage = 'siswa' %>
+<%- include('../../partials/header') %>
+
+<!-- Filter Bar -->
+<div class="card mb-4">
+  <form method="GET" action="/siswa">
+    <div class="filter-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon"><i class="fas fa-search"></i></span>
+        <input type="text" name="q" class="form-control" placeholder="Cari NIS, nama, atau kelas..." value="<%= q||'' %>">
+      </div>
+      <select name="kelas" class="form-control" style="width:160px">
+        <option value="">Semua Kelas</option>
+        <% kelasList.forEach(k => { %>
+          <option value="<%= k.kelas %>" <%= kelas===k.kelas?'selected':'' %>><%= k.kelas %></option>
+        <% }) %>
+      </select>
+      <select name="status" class="form-control" style="width:140px">
+        <option value="">Aktif</option>
+        <option value="Non-Aktif" <%= status==='Non-Aktif'?'selected':'' %>>Non-Aktif</option>
+        <option value="Lulus"     <%= status==='Lulus'?'selected':'' %>>Lulus</option>
+        <option value="Pindah"    <%= status==='Pindah'?'selected':'' %>>Pindah</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Cari</button>
+      <a href="/siswa" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Reset</a>
+      <a href="/siswa/tambah" class="btn btn-success btn-sm" style="margin-left:auto">
+        <i class="fas fa-plus"></i> Tambah Siswa
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-user-graduate" style="color:var(--blue)"></i>
+    <span class="card-title">Data Siswa (<%= siswa.length %> siswa)</span>
+    <a href="/siswa/tambah" class="btn btn-primary btn-sm no-print">
+      <i class="fas fa-plus"></i> Tambah
+    </a>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>NIS</th><th>Nama Lengkap</th><th>Kelas</th>
+          <th>JK</th><th>Nama Wali</th><th>No. Wali</th><th>Status</th><th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (siswa.length) { %>
+          <% siswa.forEach((s, i) => { %>
+          <tr>
+            <td class="text-muted text-sm"><%= i+1 %></td>
+            <td class="mono"><%= s.nis %></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#1e3a6e);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0">
+                  <%= s.nama.charAt(0) %>
+                </div>
+                <strong><%= s.nama %></strong>
+              </div>
+            </td>
+            <td><span class="badge badge-info"><%= s.kelas %></span></td>
+            <td>
+              <span class="badge <%= s.jenis_kelamin==='L' ? 'badge-info' : 'badge-purple' %>">
+                <%= s.jenis_kelamin==='L' ? '♂ L' : '♀ P' %>
+              </span>
+            </td>
+            <td><%= s.nama_wali||'-' %></td>
+            <td class="mono text-sm"><%= s.no_wali||'-' %></td>
+            <td>
+              <% const stBadge = {Aktif:'success','Non-Aktif':'danger',Lulus:'teal',Pindah:'warning'} %>
+              <span class="badge badge-<%= stBadge[s.status]||'gray' %>"><%= s.status %></span>
+            </td>
+            <td>
+              <div style="display:flex;gap:4px">
+                <a href="/siswa/<%= s.nis %>" class="btn btn-secondary btn-xs" title="Detail">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="/siswa/<%= s.nis %>/edit" class="btn btn-warning btn-xs" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <form action="/siswa/<%= s.nis %>?_method=DELETE" method="POST" id="del-<%= s.nis %>">
+                  <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('del-<%= s.nis %>','Nonaktifkan siswa <%= s.nama %>?')" title="Nonaktifkan">
+                    <i class="fas fa-user-slash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="9">
+            <div class="empty-state">
+              <div class="empty-icon">👨‍🎓</div>
+              <h4>Belum ada data siswa</h4>
+              <p>Klik "Tambah Siswa" untuk menambahkan data pertama</p>
+            </div>
+          </td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

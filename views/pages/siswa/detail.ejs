@@ -1,0 +1,159 @@
+<% activePage = 'siswa' %>
+<%- include('../../partials/header') %>
+
+<div style="display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start">
+
+  <!-- Profil Card -->
+  <div>
+    <div class="card mb-4">
+      <div class="card-body" style="text-align:center">
+        <% if (siswa.foto) { %>
+          <img src="/uploads/<%= siswa.foto %>" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--blue);margin-bottom:12px">
+        <% } else { %>
+          <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--navy-mid));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;color:#fff;margin:0 auto 12px">
+            <%= siswa.nama.charAt(0) %>
+          </div>
+        <% } %>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:4px"><%= siswa.nama %></h3>
+        <div class="mono text-sm text-muted"><%= siswa.nis %></div>
+        <div style="margin-top:8px">
+          <span class="badge badge-info"><%= siswa.kelas %></span>
+          <span class="badge <%= siswa.jenis_kelamin==='L'?'badge-info':'badge-purple' %>" style="margin-left:4px">
+            <%= siswa.jenis_kelamin==='L'?'♂ L':'♀ P' %>
+          </span>
+        </div>
+        <% const stBadge = {Aktif:'success','Non-Aktif':'danger',Lulus:'teal',Pindah:'warning'} %>
+        <div style="margin-top:6px"><span class="badge badge-<%= stBadge[siswa.status]||'gray' %>"><%= siswa.status %></span></div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-address-card" style="color:var(--blue)"></i><span class="card-title">Info Wali</span></div>
+      <div class="card-body">
+        <div style="font-size:13px">
+          <div style="margin-bottom:8px"><span class="text-muted">Nama:</span><br><strong><%= siswa.nama_wali||'-' %></strong></div>
+          <div style="margin-bottom:8px"><span class="text-muted">No. HP:</span><br><strong class="mono"><%= siswa.no_wali||'-' %></strong></div>
+          <% if (siswa.no_wali) { %>
+          <a href="https://wa.me/<%= siswa.no_wali.replace(/^0/,'62').replace(/\D/g,'') %>" target="_blank" class="btn btn-success btn-sm w-100">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+          </a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a href="/siswa/<%= siswa.nis %>/edit" class="btn btn-warning"><i class="fas fa-edit"></i> Edit Data</a>
+      <a href="/siswa" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Kembali</a>
+    </div>
+  </div>
+
+  <!-- Detail Tabs -->
+  <div>
+    <!-- Summary Badges -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="stat-card" style="padding:14px">
+        <div class="stat-icon red"><i class="fas fa-exclamation" style="color:var(--accent)"></i></div>
+        <div><div class="stat-value" style="font-size:22px"><%= pelanggaran.length %></div><div class="stat-label">Pelanggaran</div></div>
+      </div>
+      <div class="stat-card" style="padding:14px">
+        <div class="stat-icon purple"><i class="fas fa-file-alt" style="color:#7b1fa2"></i></div>
+        <div><div class="stat-value" style="font-size:22px"><%= sp.length %></div><div class="stat-label">Surat Peringatan</div></div>
+      </div>
+      <div class="stat-card" style="padding:14px">
+        <div class="stat-icon orange"><i class="fas fa-box" style="color:var(--accent2)"></i></div>
+        <div><div class="stat-value" style="font-size:22px"><%= penyitaan.length %></div><div class="stat-label">Penyitaan</div></div>
+      </div>
+    </div>
+
+    <!-- Riwayat Pelanggaran -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="fas fa-exclamation-triangle" style="color:var(--accent)"></i>
+        <span class="card-title">Riwayat Pelanggaran</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Kode</th><th>Jenis</th><th>Tanggal</th><th>Status</th><th>Catatan</th></tr></thead>
+          <tbody>
+            <% if (pelanggaran.length) { pelanggaran.forEach(p => { %>
+            <tr>
+              <td class="mono text-sm"><%= p.kode %></td>
+              <td>
+                <% const jB={Alpha:'danger',Terlambat:'warning',Bolos:'danger',Izin:'info',Sakit:'teal',Lainnya:'gray'} %>
+                <span class="badge badge-<%= jB[p.jenis_pelanggaran]||'gray' %>"><%= p.jenis_pelanggaran %></span>
+              </td>
+              <td><%= p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+              <td>
+                <% if (p.status==='Terkonfirmasi') { %><span class="badge badge-success">✔ Terkonfirmasi</span>
+                <% } else { %><span class="badge badge-warning">⏳ Pending</span><% } %>
+              </td>
+              <td class="text-sm text-muted"><%= p.catatan||'-' %></td>
+            </tr>
+            <% }) } else { %>
+            <tr><td colspan="5"><div class="empty-state" style="padding:20px"><p>Belum ada riwayat pelanggaran ✅</p></div></td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Surat Peringatan -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="fas fa-file-alt" style="color:#7b1fa2"></i>
+        <span class="card-title">Surat Peringatan</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Kode SP</th><th>Tipe</th><th>Tanggal</th><th>Status</th></tr></thead>
+          <tbody>
+            <% if (sp.length) { sp.forEach(s => { %>
+            <tr>
+              <td class="mono text-sm"><%= s.kode_sp %></td>
+              <td><span class="badge badge-purple"><%= s.tipe_sp %></span></td>
+              <td><%= s.tanggal_sp ? new Date(s.tanggal_sp).toLocaleDateString('id-ID') : '-' %></td>
+              <td>
+                <% const spBadge={Aktif:'danger',Selesai:'success',Dibatalkan:'gray'} %>
+                <span class="badge badge-<%= spBadge[s.status]||'gray' %>"><%= s.status %></span>
+              </td>
+            </tr>
+            <% }) } else { %>
+            <tr><td colspan="4"><div class="empty-state" style="padding:20px"><p>Belum ada surat peringatan ✅</p></div></td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Penyitaan -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-box-open" style="color:var(--accent2)"></i>
+        <span class="card-title">Riwayat Penyitaan Barang</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Kode</th><th>Barang</th><th>Tanggal</th><th>Status</th></tr></thead>
+          <tbody>
+            <% if (penyitaan.length) { penyitaan.forEach(p => { %>
+            <tr>
+              <td class="mono text-sm"><%= p.kode_pst %></td>
+              <td><strong><%= p.nama_barang %></strong><br><span class="text-sm text-muted"><%= p.jenis_barang %></span></td>
+              <td><%= p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+              <td>
+                <% if (p.status_pengembalian==='Sudah Dikembalikan') { %><span class="badge badge-success">Sudah Kembali</span>
+                <% } else { %><span class="badge badge-danger">Belum Kembali</span><% } %>
+              </td>
+            </tr>
+            <% }) } else { %>
+            <tr><td colspan="4"><div class="empty-state" style="padding:20px"><p>Belum ada riwayat penyitaan ✅</p></div></td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

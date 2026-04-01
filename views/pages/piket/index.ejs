@@ -1,0 +1,115 @@
+<% activePage = 'piket' %>
+<%- include('../../partials/header') %>
+
+<!-- Navigasi Minggu -->
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+  <a href="/piket?minggu=<%= mingguLalu %>" class="btn btn-secondary btn-sm"><i class="fas fa-chevron-left"></i> Minggu Lalu</a>
+  <h2 style="font-size:15px;font-weight:700;flex:1;text-align:center"><i class="fas fa-calendar-week" style="color:var(--blue)"></i> <%= labelMinggu %></h2>
+  <a href="/piket?minggu=<%= mingguDepan %>" class="btn btn-secondary btn-sm">Minggu Depan <i class="fas fa-chevron-right"></i></a>
+</div>
+
+<!-- Generate Otomatis -->
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-magic" style="color:var(--accent2)"></i><span class="card-title">Generate Jadwal Otomatis (Bergilir)</span></div>
+  <div class="card-body">
+    <form action="/piket/generate" method="POST" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">Mulai Minggu</label>
+        <input type="date" name="minggu_mulai" class="form-control" value="<%= mingguIni %>" required>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">Shift</label>
+        <select name="shift" class="form-control" style="width:120px">
+          <option value="Pagi">Pagi</option>
+          <option value="Siang">Siang</option>
+          <option value="Sore">Sore</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-warning"><i class="fas fa-magic"></i> Generate Bergilir</button>
+      <span class="text-sm text-muted" style="align-self:center">Petugas akan dijadwalkan bergilir Senin–Sabtu</span>
+    </form>
+  </div>
+</div>
+
+<!-- Grid Jadwal Mingguan -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px">
+  <% hariList.forEach(h => { %>
+  <div class="card">
+    <div class="card-header" style="background:<%= h.tanggal === new Date().toISOString().split('T')[0] ? 'var(--blue)' : 'var(--bg)' %>">
+      <span class="card-title" style="color:<%= h.tanggal === new Date().toISOString().split('T')[0] ? '#fff' : 'var(--text)' %>">
+        <%= h.hari %> <span style="font-weight:400;font-size:12px"><%= new Date(h.tanggal+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) %></span>
+        <% if (h.tanggal === new Date().toISOString().split('T')[0]) { %><span class="badge" style="background:rgba(255,255,255,.2);color:#fff;margin-left:4px">Hari Ini</span><% } %>
+      </span>
+    </div>
+    <div class="card-body" style="padding:12px">
+      <% if (h.jadwal.length) { h.jadwal.forEach(j => { %>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--bg);border-radius:8px;margin-bottom:6px">
+        <div>
+          <div style="font-weight:600;font-size:13px"><%= j.nama %></div>
+          <span class="badge badge-info" style="font-size:10px"><%= j.shift %></span>
+          <% if (j.status !== 'Aktif') { %><span class="badge badge-warning" style="font-size:10px"><%= j.status %></span><% } %>
+        </div>
+        <form action="/piket/<%= j.id %>?_method=DELETE" method="POST">
+          <input type="hidden" name="minggu" value="<%= mingguIni %>">
+          <button type="submit" class="btn btn-danger btn-xs" onclick="return confirm('Hapus jadwal ini?')"><i class="fas fa-times"></i></button>
+        </form>
+      </div>
+      <% }) } else { %>
+      <div style="text-align:center;color:var(--text3);font-size:12px;padding:12px">Belum ada jadwal</div>
+      <% } %>
+
+      <!-- Tambah manual -->
+      <button class="btn btn-secondary btn-xs w-100" style="margin-top:4px"
+        onclick="openTambah('<%= h.tanggal %>','<%= h.hari %>')">
+        <i class="fas fa-plus"></i> Tambah
+      </button>
+    </div>
+  </div>
+  <% }) %>
+</div>
+
+<!-- Modal Tambah -->
+<div class="modal-overlay" id="modalTambah">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title"><i class="fas fa-plus"></i> Tambah Jadwal Piket</span><button class="modal-close" onclick="closeModal('modalTambah')">✕</button></div>
+    <form action="/piket" method="POST">
+      <input type="hidden" name="tanggal" id="inputTanggal">
+      <input type="hidden" name="hari"    id="inputHari">
+      <div class="modal-body">
+        <div id="infoTanggal" style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:14px;font-size:13.5px;font-weight:600"></div>
+        <div class="form-group">
+          <label class="form-label">Petugas</label>
+          <select name="nama" class="form-control" required>
+            <option value="">-- Pilih Petugas --</option>
+            <% petugas.forEach(p => { %><option value="<%= p.nama %>"><%= p.nama %></option><% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Shift</label>
+          <select name="shift" class="form-control">
+            <option value="Pagi">Pagi</option><option value="Siang">Siang</option><option value="Sore">Sore</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Keterangan</label>
+          <input type="text" name="keterangan" class="form-control" placeholder="Opsional...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalTambah')">Batal</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openTambah(tgl, hari) {
+  document.getElementById('inputTanggal').value = tgl;
+  document.getElementById('inputHari').value    = hari;
+  document.getElementById('infoTanggal').textContent = `📅 ${hari}, ${new Date(tgl+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}`;
+  openModal('modalTambah');
+}
+</script>
+
+<%- include('../../partials/footer') %>

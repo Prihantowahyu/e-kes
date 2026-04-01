@@ -1,0 +1,95 @@
+  </main>
+</div>
+
+<!-- PWA Install Banner -->
+<div class="pwa-banner" id="pwaBanner">
+  <span style="font-size:24px">📱</span>
+  <p><strong>Install Aplikasi</strong>Tambahkan ke layar utama HP untuk akses lebih cepat</p>
+  <button onclick="installPWA()" class="btn btn-primary btn-sm">Install</button>
+  <button onclick="document.getElementById('pwaBanner').classList.remove('show')" class="btn btn-secondary btn-sm">Nanti</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="/js/app.js"></script>
+<script>
+// ── CLOCK ──────────────────────────────────────────────────
+function updateClock() {
+  const el = document.getElementById('clock');
+  if (el) el.textContent = new Date().toLocaleTimeString('id-ID');
+}
+updateClock(); setInterval(updateClock, 1000);
+
+// ── SIDEBAR MOBILE ─────────────────────────────────────────
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebar = document.getElementById('sidebar');
+if (sidebarToggle) {
+  sidebarToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+}
+window.addEventListener('resize', () => {
+  if (sidebarToggle) sidebarToggle.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+});
+if (sidebarToggle && window.innerWidth <= 768) sidebarToggle.style.display = 'flex';
+
+// ── MODAL ──────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+});
+
+// ── AUTO DISMISS ALERTS ────────────────────────────────────
+setTimeout(() => {
+  document.querySelectorAll('.alert').forEach(a => {
+    a.style.transition = 'opacity .5s'; a.style.opacity = '0';
+    setTimeout(() => a.style.display = 'none', 500);
+  });
+}, 4000);
+
+// ── CONFIRM DELETE ─────────────────────────────────────────
+function confirmDelete(formId, msg) {
+  if (confirm(msg || 'Yakin ingin menghapus data ini?')) {
+    document.getElementById(formId).submit();
+  }
+}
+
+// ── DARK MODE ──────────────────────────────────────────────
+function toggleDark() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('darkMode', isDark ? '1' : '0');
+  document.getElementById('darkBtn').textContent = isDark ? '☀️' : '🌙';
+}
+(function() {
+  if (localStorage.getItem('darkMode') === '1') {
+    document.body.classList.add('dark-mode');
+    const btn = document.getElementById('darkBtn');
+    if (btn) btn.textContent = '☀️';
+  }
+})();
+
+// ── PWA SERVICE WORKER ─────────────────────────────────────
+let deferredPrompt = null;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(() => {
+    const banner = document.getElementById('pwaBanner');
+    if (banner && !localStorage.getItem('pwaInstalled')) banner.classList.add('show');
+  }, 3000);
+});
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(r => {
+    if (r.outcome === 'accepted') {
+      localStorage.setItem('pwaInstalled', '1');
+      document.getElementById('pwaBanner').classList.remove('show');
+    }
+    deferredPrompt = null;
+  });
+}
+</script>
+</body>
+</html>

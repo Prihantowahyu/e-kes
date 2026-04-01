@@ -1,0 +1,168 @@
+<% activePage = 'rapor' %>
+<%- include('../../partials/header') %>
+
+<!-- Filter & Generate -->
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-graduation-cap" style="color:var(--blue)"></i><span class="card-title">Filter & Generate Rapor</span></div>
+  <div class="card-body">
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <!-- Filter -->
+      <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex:1;flex-wrap:wrap">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Semester</label>
+          <select name="semester" class="form-control" style="width:120px">
+            <option value="1" <%= filter.semester==='1'?'selected':'' %>>Semester 1</option>
+            <option value="2" <%= filter.semester==='2'?'selected':'' %>>Semester 2</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Tahun Ajaran</label>
+          <select name="tahun_ajaran" class="form-control" style="width:130px">
+            <% tahunList.forEach(t => { %><option value="<%= t %>" <%= filter.tahun_ajaran===t?'selected':'' %>><%= t %></option><% }) %>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Kelas</label>
+          <select name="kelas" class="form-control" style="width:140px">
+            <option value="">Semua Kelas</option>
+            <% kelasList.forEach(k => { %><option value="<%= k.kelas %>" <%= filter.kelas===k.kelas?'selected':'' %>><%= k.kelas %></option><% }) %>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Tampilkan</button>
+      </form>
+
+      <!-- Generate + Export -->
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <form action="/rapor/generate" method="POST" style="display:flex;gap:8px;align-items:flex-end">
+          <input type="hidden" name="semester"     value="<%= filter.semester %>">
+          <input type="hidden" name="tahun_ajaran" value="<%= filter.tahun_ajaran %>">
+          <input type="hidden" name="kelas"        value="<%= filter.kelas||'' %>">
+          <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Generate/update rapor untuk filter saat ini?')">
+            <i class="fas fa-magic"></i> Generate Otomatis
+          </button>
+        </form>
+        <a href="/rapor/export?semester=<%= filter.semester %>&amp;tahun_ajaran=<%= filter.tahun_ajaran %>&amp;kelas=<%= filter.kelas||'' %>"
+           class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Export Excel</a>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:12px;margin-bottom:0;font-size:12px">
+      <i class="fas fa-info-circle"></i>
+      <strong>Kriteria Nilai:</strong>
+      <span class="badge" style="background:#2e7d32;color:#fff">A</span> Tidak ada SP, Alpha&lt;5, Terlambat&lt;10 &nbsp;|&nbsp;
+      <span class="badge" style="background:#1565c0;color:#fff">B</span> SP=1 / Alpha≥5 / Terlambat≥10 &nbsp;|&nbsp;
+      <span class="badge" style="background:#f57f17;color:#fff">C</span> SP=2 / Alpha≥10 &nbsp;|&nbsp;
+      <span class="badge" style="background:#c62828;color:#fff">D</span> SP≥3 / Alpha≥15
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-list-alt" style="color:var(--blue)"></i>
+    <span class="card-title">Rapor Perilaku Semester <%= filter.semester %> — TA <%= filter.tahun_ajaran %> (<%= rapor.length %> siswa)</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>#</th><th>NIS</th><th>Nama Siswa</th><th>Kelas</th><th>Nilai</th><th>Alpha</th><th>Terlambat</th><th>Jml Pel</th><th>Jml SP</th><th>Catatan</th><th>Aksi</th></tr>
+      </thead>
+      <tbody id="tbody_rapor">
+        <% if (rapor.length) { rapor.forEach((r, i) => {
+          const nilaiColor = {A:'success',B:'info',C:'warning',D:'danger'};
+        %>
+        <tr>
+          <td class="text-muted text-sm"><%= i+1 %></td>
+          <td class="mono"><%= r.nis %></td>
+          <td><a href="/siswa/<%= r.nis %>" style="font-weight:600;color:var(--blue);text-decoration:none"><%= r.nama_siswa %></a></td>
+          <td><span class="badge badge-info"><%= r.kelas %></span></td>
+          <td>
+            <span class="badge badge-<%= nilaiColor[r.nilai_perilaku]||'gray' %>" style="font-size:15px;padding:4px 12px;font-weight:800">
+              <%= r.nilai_perilaku %>
+            </span>
+          </td>
+          <td><span class="<%= r.total_alpha>=5?'badge badge-danger':'text-muted text-sm' %>"><%= r.total_alpha %></span></td>
+          <td><span class="<%= r.total_terlambat>=10?'badge badge-warning':'text-muted text-sm' %>"><%= r.total_terlambat %></span></td>
+          <td><span class="<%= r.total_pelanggaran>=10?'badge badge-danger':'text-muted text-sm' %>"><%= r.total_pelanggaran %></span></td>
+          <td><span class="<%= r.total_sp>0?'badge badge-purple':'text-muted text-sm' %>"><%= r.total_sp %></span></td>
+          <td class="text-sm text-muted"><%= r.catatan ? r.catatan.substring(0,40)+(r.catatan.length>40?'...':'') : '-' %></td>
+          <td>
+            <button class="btn btn-warning btn-xs" onclick="openEdit(<%= r.id %>,'<%= r.nilai_perilaku %>','<%= (r.catatan||'').replace(/'/g,"\\'") %>')">
+              <i class="fas fa-edit"></i>
+            </button>
+          </td>
+        </tr>
+        <% }) } else { %>
+        <tr><td colspan="11">
+          <div class="empty-state"><div class="empty-icon">📊</div><h4>Belum ada rapor perilaku</h4>
+          <p>Klik <strong>"Generate Otomatis"</strong> untuk membuat rapor dari data pelanggaran yang ada</p></div>
+        </td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  <div style="padding:12px 20px;border-top:1px solid var(--border)">
+    <div id="tbody_rapor_pag" class="pagination"></div>
+  </div>
+</div>
+
+<!-- Modal Edit Nilai -->
+<div class="modal-overlay" id="modalEdit">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title"><i class="fas fa-edit"></i> Edit Nilai Perilaku</span><button class="modal-close" onclick="closeModal('modalEdit')">✕</button></div>
+    <form action="" method="POST" id="formEdit">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nilai Perilaku</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            <% [{val:'A',color:'#2e7d32',label:'A — Baik Sekali'},{val:'B',color:'#1565c0',label:'B — Baik'},{val:'C',color:'#f57f17',label:'C — Cukup'},{val:'D',color:'#c62828',label:'D — Kurang'}].forEach(n => { %>
+            <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer">
+              <input type="radio" name="nilai_perilaku" value="<%= n.val %>" id="edit-nilai-<%= n.val %>" style="display:none">
+              <span id="badge-nilai-<%= n.val %>" style="width:44px;height:44px;border-radius:50%;background:white;border:2.5px solid <%= n.color %>;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:<%= n.color %>;cursor:pointer;transition:all .15s"
+                onclick="selectNilai('<%= n.val %>')"><%= n.val %></span>
+              <span style="font-size:10px;text-align:center;color:#666"><%= n.label.split('—')[1].trim() %></span>
+            </label>
+            <% }) %>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan</label>
+          <textarea name="catatan" id="editCatatan" class="form-control" rows="3" placeholder="Catatan tambahan..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalEdit')">Batal</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEdit(id, nilai, catatan) {
+  document.getElementById('formEdit').action = `/rapor/${id}?_method=PUT`;
+  document.getElementById('editCatatan').value = catatan;
+  selectNilai(nilai);
+  openModal('modalEdit');
+}
+function selectNilai(v) {
+  ['A','B','C','D'].forEach(n => {
+    const el = document.getElementById(`badge-nilai-${n}`);
+    if (el) el.style.background = 'white';
+  });
+  const colors = { A:'#2e7d32', B:'#1565c0', C:'#f57f17', D:'#c62828' };
+  const el = document.getElementById(`badge-nilai-${v}`);
+  if (el) { el.style.background = colors[v]; el.style.color = '#fff'; }
+  document.getElementById(`edit-nilai-${v}`).checked = true;
+  ['A','B','C','D'].forEach(n => {
+    if (n !== v) {
+      const e = document.getElementById(`badge-nilai-${n}`);
+      if (e) { e.style.background = 'white'; e.style.color = colors[n]; }
+    }
+  });
+}
+initPagination('tbody_rapor', 25);
+</script>
+
+<%- include('../../partials/footer') %>

@@ -1,0 +1,271 @@
+<% activePage = 'laporan' %>
+<%- include('../../partials/header') %>
+
+<!-- Filter Periode -->
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-filter" style="color:var(--blue)"></i><span class="card-title">Filter Periode</span></div>
+  <div class="card-body">
+    <form method="GET" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">Bulan</label>
+        <select name="bulan" class="form-control" style="width:140px">
+          <% const namaBulan=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+          for(let i=1;i<=12;i++) { %>
+            <option value="<%= String(i).padStart(2,'0') %>" <%= bln===String(i).padStart(2,'0')?'selected':'' %>><%= namaBulan[i-1] %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">Tahun</label>
+        <select name="tahun" class="form-control" style="width:100px">
+          <% tahunList.forEach(t => { %>
+            <option value="<%= t.thn %>" <%= String(thn)===String(t.thn)?'selected':'' %>><%= t.thn %></option>
+          <% }) %>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Tampilkan</button>
+    </form>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-exclamation-triangle" style="color:var(--accent)"></i></div>
+    <div><div class="stat-value"><%= stats.totalPel %></div><div class="stat-label">Pelanggaran</div><div class="stat-sub"><%= dari %> s/d <%= sampai %></div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-file-alt" style="color:#7b1fa2"></i></div>
+    <div><div class="stat-value"><%= stats.totalSP %></div><div class="stat-label">Surat Peringatan</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange"><i class="fas fa-box" style="color:var(--accent2)"></i></div>
+    <div><div class="stat-value"><%= stats.totalPst %></div><div class="stat-label">Penyitaan</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-calendar-check" style="color:var(--blue)"></i></div>
+    <div><div class="stat-value"><%= stats.totalKh %></div><div class="stat-label">Record Kehadiran</div></div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+  <div class="card">
+    <div class="card-header"><i class="fas fa-chart-line" style="color:var(--blue)"></i><span class="card-title">Tren Pelanggaran Harian</span></div>
+    <div class="card-body"><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-header"><i class="fas fa-chart-pie" style="color:var(--accent)"></i><span class="card-title">Per Jenis Pelanggaran</span></div>
+    <div class="card-body"><div class="chart-container"><canvas id="jenisChart"></canvas></div></div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+  <!-- Kehadiran -->
+  <div class="card">
+    <div class="card-header"><i class="fas fa-chart-bar" style="color:var(--green)"></i><span class="card-title">Rekap Kehadiran</span></div>
+    <div class="card-body"><div class="chart-container"><canvas id="kehadiranChart"></canvas></div></div>
+  </div>
+  <!-- Grafik tahunan -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-chart-area" style="color:var(--teal)"></i>
+      <span class="card-title">Tren Bulanan</span>
+      <select id="tahunGrafik" class="form-control" style="width:90px" onchange="loadTahunan(this.value)">
+        <% tahunList.forEach(t => { %><option value="<%= t.thn %>"><%= t.thn %></option><% }) %>
+      </select>
+    </div>
+    <div class="card-body"><div class="chart-container"><canvas id="bulananChart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- Top Siswa -->
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-trophy" style="color:var(--accent2)"></i><span class="card-title">10 Siswa Dengan Pelanggaran Terbanyak — <%= namaBulan[parseInt(bln)-1] %> <%= thn %></span></div>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Rank</th><th>NIS</th><th>Nama Siswa</th><th>Kelas</th><th>Jumlah</th><th>Bar</th></tr></thead>
+      <tbody>
+        <% if (topSiswa.length) {
+          const max = topSiswa[0].jumlah;
+          topSiswa.forEach((s,i) => {
+            const pct = Math.round(s.jumlah/max*100);
+        %>
+        <tr>
+          <td>
+            <% if (i===0) { %><span style="font-size:18px">🥇</span>
+            <% } else if (i===1) { %><span style="font-size:18px">🥈</span>
+            <% } else if (i===2) { %><span style="font-size:18px">🥉</span>
+            <% } else { %><span class="text-muted">#<%= i+1 %></span><% } %>
+          </td>
+          <td class="mono text-sm"><%= s.nis %></td>
+          <td><a href="/siswa/<%= s.nis %>" style="font-weight:600;color:var(--blue);text-decoration:none"><%= s.nama_siswa %></a></td>
+          <td><span class="badge badge-info"><%= s.kelas %></span></td>
+          <td><span class="badge badge-danger" style="font-size:13px;padding:4px 12px"><%= s.jumlah %>×</span></td>
+          <td style="width:200px">
+            <div style="background:var(--bg2);border-radius:4px;height:8px;overflow:hidden">
+              <div style="width:<%= pct %>%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px"></div>
+            </div>
+          </td>
+        </tr>
+        <% }) } else { %>
+        <tr><td colspan="6" class="text-center text-muted" style="padding:20px">Tidak ada pelanggaran pada periode ini ✅</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Export & Import Panel -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+  <!-- Export -->
+  <div class="card">
+    <div class="card-header"><i class="fas fa-file-export" style="color:var(--green)"></i><span class="card-title">Export Data</span></div>
+    <div class="card-body">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="background:var(--bg);border-radius:8px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px"><i class="fas fa-exclamation-triangle" style="color:var(--accent)"></i> Export Pelanggaran</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="date" id="pelDari"   class="form-control" style="width:140px" value="<%= dari %>">
+            <span class="text-muted text-sm">s/d</span>
+            <input type="date" id="pelSampai" class="form-control" style="width:140px" value="<%= sampai %>">
+            <a href="#" onclick="exportData('pelanggaran')" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Excel</a>
+          </div>
+        </div>
+
+        <div style="background:var(--bg);border-radius:8px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px"><i class="fas fa-calendar-check" style="color:var(--blue)"></i> Export Kehadiran</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="date" id="khDari"   class="form-control" style="width:140px" value="<%= dari %>">
+            <span class="text-muted text-sm">s/d</span>
+            <input type="date" id="khSampai" class="form-control" style="width:140px" value="<%= sampai %>">
+            <a href="#" onclick="exportData('kehadiran')" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Excel</a>
+          </div>
+        </div>
+
+        <div style="background:var(--bg);border-radius:8px;padding:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px"><i class="fas fa-file-alt" style="color:#7b1fa2"></i> Export Surat Peringatan</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="date" id="spDari"   class="form-control" style="width:140px" value="<%= dari %>">
+            <span class="text-muted text-sm">s/d</span>
+            <input type="date" id="spSampai" class="form-control" style="width:140px" value="<%= sampai %>">
+            <a href="#" onclick="exportData('sp')" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Excel</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import & Backup -->
+  <div class="card">
+    <div class="card-header"><i class="fas fa-tools" style="color:var(--blue)"></i><span class="card-title">Import & Backup</span></div>
+    <div class="card-body">
+
+      <!-- Import Siswa -->
+      <div style="background:var(--bg);border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:6px"><i class="fas fa-file-import" style="color:var(--blue)"></i> Import Data Siswa dari Excel</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
+          Upload file Excel (.xlsx) dengan kolom: NIS, Nama, Kelas, JenisKelamin, NamaWali, NoWali
+        </div>
+        <a href="/laporan/template/siswa" class="btn btn-secondary btn-xs" style="margin-bottom:8px">
+          <i class="fas fa-download"></i> Download Template
+        </a>
+        <form action="/laporan/import/siswa" method="POST" enctype="multipart/form-data" style="display:flex;gap:8px;margin-top:6px">
+          <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+          <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap"><i class="fas fa-upload"></i> Import</button>
+        </form>
+      </div>
+
+      <!-- Backup -->
+      <div style="background:var(--bg);border-radius:8px;padding:14px">
+        <div style="font-weight:600;font-size:13px;margin-bottom:6px"><i class="fas fa-database" style="color:var(--green)"></i> Backup Database</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+          Backup semua data ke file SQL yang bisa diimport kembali ke MySQL.
+        </div>
+        <form action="/laporan/backup" method="POST">
+          <button type="submit" class="btn btn-success"><i class="fas fa-download"></i> Download Backup (.sql)</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const trendData    = <%- JSON.stringify(trendHarian) %>;
+const jenisData    = <%- JSON.stringify(byJenis) %>;
+const kehadiranData= <%- JSON.stringify(kehadiranRekap) %>;
+const namaBulanArr = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+
+// Trend Harian
+new Chart(document.getElementById('trendChart'), {
+  type:'line',
+  data:{
+    labels: trendData.map(d => new Date(d.tgl).toLocaleDateString('id-ID',{day:'2-digit',month:'short'})),
+    datasets:[{ label:'Pelanggaran', data:trendData.map(d=>d.jumlah),
+      borderColor:'#1565c0', backgroundColor:'rgba(21,101,192,.1)',
+      borderWidth:2, tension:0.4, fill:true, pointRadius:4 }]
+  },
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{stepSize:1}}} }
+});
+
+// Jenis Donut
+new Chart(document.getElementById('jenisChart'), {
+  type:'doughnut',
+  data:{
+    labels: jenisData.map(d=>d.jenis_pelanggaran),
+    datasets:[{ data:jenisData.map(d=>d.jumlah), backgroundColor:['#e53935','#f9a825','#1565c0','#00796b','#7b1fa2','#546e7a'], borderWidth:0 }]
+  },
+  options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{position:'right',labels:{font:{size:11}}}} }
+});
+
+// Kehadiran Bar
+const khColors = { Hadir:'#2e7d32', Alpha:'#c62828', Terlambat:'#f57f17', Izin:'#1565c0', Sakit:'#00796b', Bolos:'#c62828' };
+new Chart(document.getElementById('kehadiranChart'), {
+  type:'bar',
+  data:{
+    labels: kehadiranData.map(d=>d.status_kehadiran),
+    datasets:[{ data:kehadiranData.map(d=>d.jumlah),
+      backgroundColor: kehadiranData.map(d=>khColors[d.status_kehadiran]||'#546e7a'),
+      borderRadius:6 }]
+  },
+  options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{stepSize:1}}} }
+});
+
+// Bulanan
+let bulananChart = null;
+async function loadTahunan(thn) {
+  const res = await fetch(`/laporan/api/statistik?tahun=${thn}`);
+  const d   = await res.json();
+  if (!d.ok) return;
+  const dataArr = Array(12).fill(0);
+  d.monthly.forEach(m => { dataArr[m.bln-1] = m.jumlah; });
+  if (bulananChart) bulananChart.destroy();
+  bulananChart = new Chart(document.getElementById('bulananChart'), {
+    type:'bar',
+    data:{
+      labels: namaBulanArr,
+      datasets:[{ label:'Pelanggaran '+thn, data:dataArr,
+        backgroundColor:'rgba(21,101,192,.2)', borderColor:'#1565c0', borderWidth:2, borderRadius:6 }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{stepSize:1}}} }
+  });
+}
+loadTahunan(document.getElementById('tahunGrafik').value);
+document.getElementById('tahunGrafik').addEventListener('change', e => loadTahunan(e.target.value));
+
+// Export helpers
+function exportData(type) {
+  const map = {
+    pelanggaran: { dari:'pelDari', sampai:'pelSampai' },
+    kehadiran:   { dari:'khDari',  sampai:'khSampai'  },
+    sp:          { dari:'spDari',  sampai:'spSampai'  }
+  };
+  const m = map[type];
+  const dari   = document.getElementById(m.dari).value;
+  const sampai = document.getElementById(m.sampai).value;
+  window.location = `/laporan/export/${type}?dari=${dari}&sampai=${sampai}`;
+}
+</script>
+
+<%- include('../../partials/footer') %>

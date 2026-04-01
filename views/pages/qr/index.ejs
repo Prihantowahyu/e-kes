@@ -1,0 +1,81 @@
+<% activePage = 'qr' %>
+<%- include('../../partials/header') %>
+
+<div style="max-width:700px;margin:0 auto">
+  <div class="alert alert-info"><i class="fas fa-info-circle"></i> Generate QR Code per kelas. Siswa scan QR pakai HP → langsung absen tanpa perlu login.</div>
+
+  <div class="card mb-4">
+    <div class="card-header"><i class="fas fa-qrcode" style="color:var(--blue)"></i><span class="card-title">Generate QR Absensi</span></div>
+    <div class="card-body">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="margin:0;flex:1;min-width:160px">
+          <label class="form-label">Kelas</label>
+          <select id="selectKelas" class="form-control">
+            <option value="">-- Pilih Kelas --</option>
+            <% kelasList.forEach(k => { %><option value="<%= k.kelas %>"><%= k.kelas %></option><% }) %>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Tanggal</label>
+          <input type="date" id="inputTanggal" class="form-control" value="<%= today %>">
+        </div>
+        <button class="btn btn-primary" onclick="generateQR()"><i class="fas fa-qrcode"></i> Generate QR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Result -->
+  <div id="qrResult" style="display:none">
+    <div class="card">
+      <div class="card-header"><i class="fas fa-qrcode" style="color:var(--green)"></i><span class="card-title" id="qrLabel">QR Code Absensi</span></div>
+      <div class="card-body" style="text-align:center">
+        <div id="qrcode" style="display:inline-block;padding:16px;background:#fff;border-radius:12px;border:2px solid var(--border);margin-bottom:16px"></div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Link langsung:</div>
+          <a id="qrLink" href="#" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> Buka Halaman Absensi</a>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button onclick="window.print()" class="btn btn-secondary btn-sm"><i class="fas fa-print"></i> Cetak QR</button>
+          <button onclick="downloadQR()" class="btn btn-success btn-sm"><i class="fas fa-download"></i> Download QR</button>
+        </div>
+        <div class="alert alert-info" style="margin-top:16px;text-align:left;font-size:12px">
+          <i class="fas fa-mobile-alt"></i> <strong>Cara pakai:</strong> Tampilkan QR ini di depan kelas atau proyektor. Siswa scan dengan kamera HP → pilih status kehadiran → klik Kirim.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+let qrInstance = null;
+async function generateQR() {
+  const kelas   = document.getElementById('selectKelas').value;
+  const tanggal = document.getElementById('inputTanggal').value;
+  if (!kelas || !tanggal) { alert('Pilih kelas dan tanggal terlebih dahulu!'); return; }
+
+  const res  = await fetch(`/qr/generate/${encodeURIComponent(kelas)}/${tanggal}`);
+  const data = await res.json();
+  const url  = window.location.origin + data.url;
+
+  document.getElementById('qrResult').style.display = 'block';
+  document.getElementById('qrLabel').textContent = `QR Absensi — ${kelas} | ${new Date(tanggal+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
+  document.getElementById('qrLink').href = data.url;
+  document.getElementById('qrLink').textContent = data.url;
+
+  const container = document.getElementById('qrcode');
+  container.innerHTML = '';
+  qrInstance = new QRCode(container, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.H });
+}
+
+function downloadQR() {
+  const canvas = document.querySelector('#qrcode canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.download = 'qr-absensi.png';
+  a.href = canvas.toDataURL();
+  a.click();
+}
+</script>
+
+<%- include('../../partials/footer') %>

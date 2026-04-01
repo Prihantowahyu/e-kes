@@ -1,0 +1,135 @@
+<% activePage = 'kehadiran-input' %>
+<%- include('../../partials/header') %>
+
+<!-- Pilih Kelas -->
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-filter" style="color:var(--blue)"></i><span class="card-title">Pilih Kelas & Tanggal</span></div>
+  <div class="card-body">
+    <form method="GET" action="/kehadiran/input">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="margin:0;flex:1;min-width:160px">
+          <label class="form-label">Kelas</label>
+          <select name="kelas" class="form-control" required>
+            <option value="">-- Pilih Kelas --</option>
+            <% kelasList.forEach(k => { %><option value="<%= k.kelas %>" <%= filter.kelas===k.kelas?'selected':'' %>><%= k.kelas %></option><% }) %>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;min-width:160px">
+          <label class="form-label">Tanggal</label>
+          <input type="date" name="tanggal" class="form-control" value="<%= filter.tanggal %>">
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-users"></i> Tampilkan Siswa</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<% if (siswaKelas.length > 0) { %>
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-clipboard-check" style="color:var(--green)"></i>
+    <span class="card-title">Absensi Kelas <strong><%= filter.kelas %></strong> — <%= hari %>, <%= new Date(filter.tanggal+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}) %></span>
+    <span class="badge badge-info"><%= siswaKelas.length %> siswa</span>
+  </div>
+
+  <form action="/kehadiran/input" method="POST">
+    <input type="hidden" name="tanggal"   value="<%= filter.tanggal %>">
+    <input type="hidden" name="hari"      value="<%= hari %>">
+    <input type="hidden" name="kelas"     value="<%= filter.kelas %>">
+
+    <div class="card-body" style="border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Jam Ke</label>
+          <select name="jam_ke" class="form-control" style="width:130px">
+            <option value="Penuh Hari">Penuh Hari</option>
+            <% for(let j=1;j<=10;j++) { %><option value="<%= j %>">Jam ke-<%= j %></option><% } %>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:180px">
+          <label class="form-label">Petugas KBM</label>
+          <select name="petugas_kbm" class="form-control">
+            <option value="<%= user.nama %>"><%= user.nama %></option>
+            <% petugasKBM.forEach(p => { %><option value="<%= p.nama %>"><%= p.nama %></option><% }) %>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:150px">
+          <label class="form-label">Lokasi (opsional)</label>
+          <input type="text" name="lokasi" class="form-control" placeholder="Contoh: Lab Komputer">
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick select buttons -->
+    <div style="padding:12px 20px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--text2)">Pilih Semua:</span>
+      <button type="button" class="btn btn-success btn-xs" onclick="setAllStatus('Hadir')"><i class="fas fa-check"></i> Hadir Semua</button>
+      <button type="button" class="btn btn-danger btn-xs"  onclick="setAllStatus('Alpha')">Alpha Semua</button>
+      <button type="button" class="btn btn-warning btn-xs" onclick="setAllStatus('Terlambat')">Terlambat Semua</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>#</th><th>NIS</th><th>Nama Siswa</th><th>JK</th>
+            <% ['Hadir','Alpha','Terlambat','Izin','Sakit','Bolos','Tidak Ikut Jam'].forEach(s => { %><th style="text-align:center;min-width:70px"><%= s %></th><% }) %>
+            <th>Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% siswaKelas.forEach((s, i) => { %>
+          <tr id="row-<%= i %>">
+            <td class="text-muted text-sm"><%= i+1 %></td>
+            <td class="mono text-sm"><%= s.nis %></td>
+            <td>
+              <strong><%= s.nama %></strong>
+              <input type="hidden" name="siswa[<%= i %>][nis]"      value="<%= s.nis %>">
+              <input type="hidden" name="siswa[<%= i %>][nama]"     value="<%= s.nama %>">
+              <input type="hidden" name="siswa[<%= i %>][jk]"       value="<%= s.jenis_kelamin %>">
+              <input type="hidden" name="siswa[<%= i %>][namaWali]" value="<%= s.nama_wali||'' %>">
+            </td>
+            <td><span class="badge <%= s.jenis_kelamin==='L'?'badge-info':'badge-purple' %>"><%= s.jenis_kelamin %></span></td>
+            <% ['Hadir','Alpha','Terlambat','Izin','Sakit','Bolos','Tidak Ikut Jam'].forEach((st,si) => { %>
+            <td style="text-align:center">
+              <input type="radio"
+                name="siswa[<%= i %>][status]"
+                value="<%= st %>"
+                class="status-radio row-<%= i %>"
+                data-row="<%= i %>"
+                <%= st==='Hadir'?'checked':'' %>
+                style="width:16px;height:16px;cursor:pointer;accent-color:<%= st==='Hadir'?'#2e7d32':st==='Alpha'||st==='Bolos'?'#c62828':'#f57f17' %>">
+            </td>
+            <% }) %>
+            <td>
+              <input type="text" name="siswa[<%= i %>][ket]" class="form-control form-control" style="width:130px;padding:4px 8px;font-size:12px" placeholder="Keterangan...">
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span class="text-sm text-muted"><i class="fas fa-info-circle"></i> Alpha, Terlambat, dan Bolos otomatis dicatat sebagai pelanggaran</span>
+      <div style="display:flex;gap:8px">
+        <a href="/kehadiran" class="btn btn-secondary"><i class="fas fa-times"></i> Batal</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> Simpan Absensi (<%= siswaKelas.length %> Siswa)
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+<% } else if (filter.kelas) { %>
+<div class="alert alert-info"><i class="fas fa-info-circle"></i> Tidak ada siswa aktif di kelas <strong><%= filter.kelas %></strong>.</div>
+<% } %>
+
+<script>
+function setAllStatus(status) {
+  document.querySelectorAll('.status-radio').forEach(r => {
+    if (r.value === status) r.checked = true;
+  });
+}
+</script>
+
+<%- include('../../partials/footer') %>

@@ -1,0 +1,87 @@
+<% activePage = 'wali' %>
+<%- include('../../partials/header') %>
+
+<div style="display:flex;gap:8px;margin-bottom:16px">
+  <a href="/wali<%= user.role!=='wali_kelas' ? '?kelas='+siswa.kelas : '' %>" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Kembali</a>
+</div>
+
+<div style="display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start">
+  <div class="card">
+    <div class="card-body" style="text-align:center;padding:24px">
+      <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--navy-mid));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;margin:0 auto 12px"><%= siswa.nama.charAt(0) %></div>
+      <h3 style="font-size:15px;font-weight:700"><%= siswa.nama %></h3>
+      <div class="mono text-sm text-muted"><%= siswa.nis %></div>
+      <div style="margin-top:8px"><span class="badge badge-info"><%= siswa.kelas %></span></div>
+      <div style="margin-top:12px;font-size:12.5px;text-align:left">
+        <div style="margin-bottom:4px"><span class="text-muted">Wali:</span> <strong><%= siswa.nama_wali||'-' %></strong></div>
+        <div><span class="text-muted">No HP:</span> <strong class="mono"><%= siswa.no_wali||'-' %></strong></div>
+        <% if (siswa.no_wali) { %>
+        <a href="https://wa.me/<%= siswa.no_wali.replace(/^0/,'62').replace(/\D/g,'') %>" target="_blank" class="btn btn-success btn-sm w-100" style="margin-top:8px"><i class="fab fa-whatsapp"></i> WhatsApp Wali</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="stat-card" style="padding:14px">
+        <div class="stat-icon red"><i class="fas fa-exclamation" style="color:var(--accent)"></i></div>
+        <div><div class="stat-value" style="font-size:22px"><%= pelanggaran.length %></div><div class="stat-label">Pelanggaran</div></div>
+      </div>
+      <div class="stat-card" style="padding:14px">
+        <div class="stat-icon purple"><i class="fas fa-file" style="color:#7b1fa2"></i></div>
+        <div><div class="stat-value" style="font-size:22px"><%= sp.length %></div><div class="stat-label">Surat Peringatan</div></div>
+      </div>
+      <div class="stat-card" style="padding:14px">
+        <div class="stat-icon blue"><i class="fas fa-calendar" style="color:var(--blue)"></i></div>
+        <div><div class="stat-value" style="font-size:22px"><%= kehadiran.length %></div><div class="stat-label">Record Kehadiran</div></div>
+      </div>
+    </div>
+
+    <!-- Pelanggaran -->
+    <div class="card mb-4">
+      <div class="card-header"><i class="fas fa-exclamation-triangle" style="color:var(--accent)"></i><span class="card-title">Pelanggaran Terbaru</span></div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Jenis</th><th>Tanggal</th><th>Status</th><th>Catatan</th></tr></thead>
+          <tbody>
+            <% if (pelanggaran.length) { pelanggaran.forEach(p => { %>
+            <tr>
+              <td><% const jB={Alpha:'danger',Terlambat:'warning',Bolos:'danger',Izin:'info',Sakit:'teal',Lainnya:'gray'} %><span class="badge badge-<%= jB[p.jenis_pelanggaran]||'gray' %>"><%= p.jenis_pelanggaran %></span></td>
+              <td><%= p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+              <td><span class="badge <%= p.status==='Terkonfirmasi'?'badge-success':'badge-warning' %>"><%= p.status %></span></td>
+              <td class="text-sm text-muted"><%= p.catatan||'-' %></td>
+            </tr>
+            <% }) } else { %>
+            <tr><td colspan="4" class="text-center text-muted" style="padding:16px">Tidak ada pelanggaran ✅</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Kehadiran -->
+    <div class="card">
+      <div class="card-header"><i class="fas fa-calendar-check" style="color:var(--green)"></i><span class="card-title">Kehadiran 30 Hari Terakhir</span></div>
+      <div style="padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap">
+        <% const statusKhColor={Hadir:'#2e7d32',Alpha:'#c62828',Terlambat:'#f57f17',Izin:'#1565c0',Sakit:'#00796b',Bolos:'#b71c1c'} %>
+        <% kehadiran.forEach(k => { %>
+        <div title="<%= new Date(k.tanggal).toLocaleDateString('id-ID') %> — <%= k.status_kehadiran %>"
+          style="width:28px;height:28px;border-radius:6px;background:<%= statusKhColor[k.status_kehadiran]||'#e0e0e0' %>;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;cursor:help">
+          <%= k.status_kehadiran.charAt(0) %>
+        </div>
+        <% }) %>
+        <% if (!kehadiran.length) { %><span class="text-muted text-sm">Belum ada data kehadiran</span><% } %>
+      </div>
+      <div style="padding:6px 20px 14px;font-size:11px;color:var(--text3)">
+        <% Object.entries(statusKhColor).forEach(([st,col]) => { %>
+        <span style="display:inline-flex;align-items:center;gap:4px;margin-right:8px">
+          <span style="width:12px;height:12px;border-radius:3px;background:<%= col %>"></span><%= st %>
+        </span>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

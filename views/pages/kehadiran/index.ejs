@@ -1,0 +1,94 @@
+<% activePage = 'kehadiran' %>
+<%- include('../../partials/header') %>
+
+<!-- Summary hari ini -->
+<div class="stats-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:20px">
+  <div class="stat-card" style="padding:14px">
+    <div class="stat-icon green"><i class="fas fa-check" style="color:var(--green)"></i></div>
+    <div><div class="stat-value" style="font-size:22px"><%= summary.Hadir||0 %></div><div class="stat-label">Hadir</div></div>
+  </div>
+  <div class="stat-card" style="padding:14px">
+    <div class="stat-icon red"><i class="fas fa-times" style="color:var(--accent)"></i></div>
+    <div><div class="stat-value" style="font-size:22px"><%= summary.Alpha||0 %></div><div class="stat-label">Alpha</div></div>
+  </div>
+  <div class="stat-card" style="padding:14px">
+    <div class="stat-icon orange"><i class="fas fa-clock" style="color:var(--accent2)"></i></div>
+    <div><div class="stat-value" style="font-size:22px"><%= summary.Terlambat||0 %></div><div class="stat-label">Terlambat</div></div>
+  </div>
+  <div class="stat-card" style="padding:14px">
+    <div class="stat-icon blue"><i class="fas fa-hand-paper" style="color:var(--blue)"></i></div>
+    <div><div class="stat-value" style="font-size:22px"><%= summary.Izin||0 %></div><div class="stat-label">Izin</div></div>
+  </div>
+  <div class="stat-card" style="padding:14px">
+    <div class="stat-icon teal"><i class="fas fa-notes-medical" style="color:var(--teal)"></i></div>
+    <div><div class="stat-value" style="font-size:22px"><%= summary.Sakit||0 %></div><div class="stat-label">Sakit</div></div>
+  </div>
+  <div class="stat-card" style="padding:14px">
+    <div class="stat-icon red"><i class="fas fa-door-open" style="color:var(--accent)"></i></div>
+    <div><div class="stat-value" style="font-size:22px"><%= summary.Bolos||0 %></div><div class="stat-label">Bolos</div></div>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+  <form method="GET">
+    <div class="filter-bar">
+      <input type="date" name="tanggal" class="form-control" style="width:160px" value="<%= filter.tanggal||'' %>">
+      <select name="kelas" class="form-control" style="width:150px">
+        <option value="">Semua Kelas</option>
+        <% kelasList.forEach(k => { %><option value="<%= k.kelas %>" <%= filter.kelas===k.kelas?'selected':'' %>><%= k.kelas %></option><% }) %>
+      </select>
+      <select name="status" class="form-control" style="width:150px">
+        <option value="">Semua Status</option>
+        <% ['Hadir','Alpha','Terlambat','Izin','Sakit','Bolos'].forEach(s => { %>
+          <option value="<%= s %>" <%= filter.status===s?'selected':'' %>><%= s %></option>
+        <% }) %>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+      <a href="/kehadiran" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></a>
+      <a href="/kehadiran/input" class="btn btn-success btn-sm" style="margin-left:auto">
+        <i class="fas fa-clipboard-list"></i> Input Absensi
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-calendar-check" style="color:var(--blue)"></i>
+    <span class="card-title">Rekap Kehadiran (<%= kehadiran.length %> records)</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Tanggal</th><th>Hari</th><th>Kelas</th><th>Siswa</th><th>Status</th><th>Jam Ke</th><th>Keterangan</th><th>Petugas KBM</th></tr>
+      </thead>
+      <tbody>
+        <% if (kehadiran.length) { kehadiran.forEach((k,i) => { %>
+        <tr>
+          <td class="text-muted text-sm"><%= i+1 %></td>
+          <td><%= k.tanggal ? new Date(k.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+          <td><%= k.hari||'-' %></td>
+          <td><span class="badge badge-info"><%= k.kelas %></span></td>
+          <td>
+            <a href="/siswa/<%= k.nis %>" style="font-weight:600;color:var(--blue);text-decoration:none"><%= k.nama_siswa %></a>
+            <div class="mono text-sm text-muted"><%= k.nis %></div>
+          </td>
+          <td>
+            <% const stKhBadge={Hadir:'success',Alpha:'danger',Terlambat:'warning',Izin:'info',Sakit:'teal',Bolos:'danger'} %>
+            <span class="badge badge-<%= stKhBadge[k.status_kehadiran]||'gray' %>"><%= k.status_kehadiran %></span>
+          </td>
+          <td class="text-sm"><%= k.jam_ke||'Penuh Hari' %></td>
+          <td class="text-sm text-muted"><%= k.keterangan||'-' %></td>
+          <td class="text-sm"><%= k.petugas_kbm||'-' %></td>
+        </tr>
+        <% }) } else { %>
+        <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📅</div><h4>Tidak ada data kehadiran</h4><p><a href="/kehadiran/input">Input absensi</a> untuk memulai</p></div></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

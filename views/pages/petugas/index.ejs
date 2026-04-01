@@ -1,0 +1,87 @@
+<% activePage = 'petugas' %>
+<%- include('../../partials/header') %>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+  <!-- Petugas Piket -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-user-shield" style="color:var(--blue)"></i>
+      <span class="card-title">Petugas Piket (<%= petugas.filter(p=>p.aktif=='1'||p.aktif==1).length %> aktif)</span>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Kode</th><th>Nama</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <% petugas.forEach(p => { %>
+          <tr>
+            <td class="mono text-sm"><%= p.kode %></td>
+            <td><strong><%= p.nama %></strong></td>
+            <td><span class="badge <%= p.aktif=='1'||p.aktif==1 ? 'badge-success':'badge-gray' %>"><%= p.aktif=='1'||p.aktif==1?'Aktif':'Non-Aktif' %></span></td>
+            <td>
+              <% if (p.aktif=='1'||p.aktif==1) { %>
+              <form action="/petugas/<%= p.id %>?_method=DELETE" method="POST">
+                <input type="hidden" name="tipe" value="piket">
+                <button type="submit" class="btn btn-danger btn-xs"><i class="fas fa-user-slash"></i></button>
+              </form>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+          <% if (!petugas.length) { %>
+          <tr><td colspan="4" class="text-center text-muted" style="padding:20px">Belum ada petugas</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:14px 16px;border-top:1px solid var(--border)">
+      <form action="/petugas" method="POST" style="display:flex;gap:8px">
+        <input type="hidden" name="tipe" value="piket">
+        <input type="text" name="nama" class="form-control" placeholder="Nama petugas baru..." required>
+        <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap"><i class="fas fa-plus"></i> Tambah</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Petugas KBM -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-chalkboard-teacher" style="color:var(--green)"></i>
+      <span class="card-title">Petugas KBM (<%= petugasKBM.filter(p=>p.aktif=='1'||p.aktif==1).length %> aktif)</span>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Kode</th><th>Nama</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>
+          <% petugasKBM.forEach(p => { %>
+          <tr>
+            <td class="mono text-sm"><%= p.kode %></td>
+            <td><strong><%= p.nama %></strong></td>
+            <td><span class="badge <%= p.aktif=='1'||p.aktif==1?'badge-success':'badge-gray' %>"><%= p.aktif=='1'||p.aktif==1?'Aktif':'Non-Aktif' %></span></td>
+            <td>
+              <% if (p.aktif=='1'||p.aktif==1) { %>
+              <form action="/petugas/<%= p.id %>?_method=DELETE" method="POST">
+                <input type="hidden" name="tipe" value="kbm">
+                <button type="submit" class="btn btn-danger btn-xs"><i class="fas fa-user-slash"></i></button>
+              </form>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+          <% if (!petugasKBM.length) { %>
+          <tr><td colspan="4" class="text-center text-muted" style="padding:20px">Belum ada petugas KBM</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:14px 16px;border-top:1px solid var(--border)">
+      <form action="/petugas" method="POST" style="display:flex;gap:8px">
+        <input type="hidden" name="tipe" value="kbm">
+        <input type="text" name="nama" class="form-control" placeholder="Nama petugas KBM baru..." required>
+        <button type="submit" class="btn btn-success btn-sm" style="white-space:nowrap"><i class="fas fa-plus"></i> Tambah</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

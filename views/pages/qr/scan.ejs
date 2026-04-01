@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root { --blue:#1565c0; --green:#2e7d32; --red:#c62828; --orange:#f57f17; --bg:#f0f4f8; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); min-height:100vh; }
+
+    .header { background:var(--blue); color:#fff; padding:14px 16px; text-align:center; position:sticky; top:0; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+    .header h1 { font-size:15px; font-weight:700; }
+    .header p  { font-size:12px; opacity:.75; margin-top:2px; }
+
+    .search-bar { padding:12px 16px; background:#fff; border-bottom:1px solid #e0e0e0; }
+    .search-bar input { width:100%; padding:10px 14px; border:1.5px solid #d0dce8; border-radius:8px; font-size:14px; outline:none; }
+    .search-bar input:focus { border-color:var(--blue); }
+
+    .siswa-list { padding:12px 16px; display:flex; flex-direction:column; gap:8px; }
+
+    .siswa-card {
+      background:#fff; border-radius:12px; padding:14px;
+      box-shadow:0 1px 4px rgba(0,0,0,.08);
+      border:2px solid transparent; transition:all .2s;
+    }
+    .siswa-card.selected { border-color:var(--blue); background:#e3f2fd; }
+    .siswa-card.submitted-hadir  { border-color:var(--green);  background:#e8f5e9; }
+    .siswa-card.submitted-alpha  { border-color:var(--red);    background:#ffebee; }
+    .siswa-card.submitted-lainnya{ border-color:var(--orange);  background:#fff8e1; }
+
+    .siswa-info { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--blue),#0d1b3e); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px; flex-shrink:0; }
+    .nama  { font-weight:700; font-size:14px; }
+    .nis   { font-size:11px; color:#666; font-family:monospace; }
+
+    .status-btns { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+    .st-btn {
+      padding:8px 4px; border:1.5px solid #e0e0e0; border-radius:8px;
+      font-size:11px; font-weight:600; cursor:pointer; background:#fff;
+      text-align:center; transition:all .15s; color:#555;
+    }
+    .st-btn.active-hadir     { background:var(--green);  color:#fff; border-color:var(--green); }
+    .st-btn.active-alpha     { background:var(--red);    color:#fff; border-color:var(--red); }
+    .st-btn.active-terlambat { background:var(--orange); color:#fff; border-color:var(--orange); }
+    .st-btn.active-izin      { background:#1565c0;       color:#fff; border-color:#1565c0; }
+    .st-btn.active-sakit     { background:#00796b;       color:#fff; border-color:#00796b; }
+    .st-btn.active-bolos     { background:#b71c1c;       color:#fff; border-color:#b71c1c; }
+
+    .submitted-badge { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+
+    .fab-submit {
+      position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+      background:var(--blue); color:#fff; border:none; border-radius:50px;
+      padding:14px 28px; font-size:15px; font-weight:700; cursor:pointer;
+      box-shadow:0 4px 20px rgba(21,101,192,.4); min-width:200px;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:all .2s; z-index:100;
+    }
+    .fab-submit:disabled { background:#9e9e9e; box-shadow:none; }
+    .fab-submit:not(:disabled):active { transform:translateX(-50%) scale(.96); }
+
+    .toast {
+      position:fixed; top:70px; left:50%; transform:translateX(-50%);
+      background:#323232; color:#fff; padding:10px 20px; border-radius:8px;
+      font-size:13px; font-weight:600; z-index:999; opacity:0;
+      transition:opacity .3s; pointer-events:none; white-space:nowrap;
+    }
+    .toast.show { opacity:1; }
+    .toast.green { background:var(--green); }
+    .toast.red   { background:var(--red); }
+
+    .summary-bar { background:#fff; padding:12px 16px; border-bottom:1px solid #e0e0e0; display:flex; gap:8px; overflow-x:auto; }
+    .sum-chip { flex-shrink:0; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; }
+    .bottom-spacer { height:80px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 Absensi <%= kelas %></h1>
+  <p><%= hari %>, <%= new Date(tanggal+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}) %></p>
+</div>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="🔍 Cari nama atau NIS..." oninput="filterSiswa()">
+</div>
+
+<div class="summary-bar" id="summaryBar">
+  <span class="sum-chip" style="background:#e8f5e9;color:#2e7d32" id="chipHadir">Hadir: 0</span>
+  <span class="sum-chip" style="background:#ffebee;color:#c62828" id="chipAlpha">Alpha: 0</span>
+  <span class="sum-chip" style="background:#fff8e1;color:#f57f17" id="chipTerlambat">Terlambat: 0</span>
+  <span class="sum-chip" style="background:#e3f2fd;color:#1565c0" id="chipIzin">Izin: 0</span>
+  <span class="sum-chip" style="background:#e0f2f1;color:#00796b" id="chipSakit">Sakit: 0</span>
+  <span class="sum-chip" style="background:#f5f5f5;color:#666"    id="chipBelum">Belum: <%= siswa.length - Object.keys(sudahAbsenMap).length %></span>
+</div>
+
+<div class="siswa-list" id="siswaList">
+  <% siswa.forEach(s => {
+    const sudah = sudahAbsenMap[s.nis];
+  %>
+  <div class="siswa-card <%= sudah ? 'submitted-'+(sudah==='Hadir'?'hadir':sudah==='Alpha'?'alpha':'lainnya') : '' %>"
+       id="card-<%= s.nis %>" data-nama="<%= s.nama.toLowerCase() %>" data-nis="<%= s.nis %>">
+    <div class="siswa-info">
+      <div class="avatar"><%= s.nama.charAt(0) %></div>
+      <div style="flex:1">
+        <div class="nama"><%= s.nama %></div>
+        <div class="nis"><%= s.nis %> | <%= s.jenis_kelamin==='L'?'♂':'♀' %></div>
+      </div>
+      <% if (sudah) { %>
+        <% const warna = {Hadir:'#2e7d32',Alpha:'#c62828',Terlambat:'#f57f17',Izin:'#1565c0',Sakit:'#00796b',Bolos:'#b71c1c'} %>
+        <span class="submitted-badge" style="background:<%= warna[sudah]||'#9e9e9e' %>1a;color:<%= warna[sudah]||'#666' %>">
+          <i class="fas fa-check-circle"></i> <%= sudah %>
+        </span>
+      <% } %>
+    </div>
+    <% if (!sudah) { %>
+    <div class="status-btns">
+      <% ['Hadir','Alpha','Terlambat','Izin','Sakit','Bolos'].forEach(st => { %>
+      <button class="st-btn" id="btn-<%= s.nis %>-<%= st %>"
+        onclick="setStatus('<%= s.nis %>','<%= st %>')"><%= st %></button>
+      <% }) %>
+      <button class="st-btn" style="grid-column:3/5;background:var(--blue);color:#fff;border-color:var(--blue)"
+        onclick="kirimSatu('<%= s.nis %>')"><i class="fas fa-paper-plane"></i> Kirim</button>
+    </div>
+    <% } %>
+  </div>
+  <% }) %>
+</div>
+
+<div class="bottom-spacer"></div>
+
+<button class="fab-submit" id="fabSubmit" onclick="kirimSemua()">
+  <i class="fas fa-paper-plane"></i> Kirim Semua Yang Dipilih
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KELAS   = '<%= kelas %>';
+const TANGGAL = '<%= tanggal %>';
+const HARI    = '<%= hari %>';
+const statusMap = {};
+const submittedSet = new Set(<%= JSON.stringify(Object.keys(sudahAbsenMap)) %>);
+
+function setStatus(nis, status) {
+  // Reset semua button NIS ini
+  ['Hadir','Alpha','Terlambat','Izin','Sakit','Bolos'].forEach(s => {
+    const b = document.getElementById(`btn-${nis}-${s}`);
+    if (b) b.className = 'st-btn';
+  });
+  // Aktifkan yang dipilih
+  const btn = document.getElementById(`btn-${nis}-${status}`);
+  if (btn) btn.className = `st-btn active-${status.toLowerCase()}`;
+  statusMap[nis] = status;
+  updateSummary();
+}
+
+function updateSummary() {
+  const counts = { Hadir:0, Alpha:0, Terlambat:0, Izin:0, Sakit:0, Belum:0 };
+  const allNIS = document.querySelectorAll('[id^="card-"]');
+  allNIS.forEach(el => {
+    const nis = el.dataset.nis;
+    if (submittedSet.has(nis)) return;
+    if (statusMap[nis]) counts[statusMap[nis]] = (counts[statusMap[nis]]||0) + 1;
+    else counts.Belum++;
+  });
+  document.getElementById('chipHadir').textContent    = `Hadir: ${counts.Hadir}`;
+  document.getElementById('chipAlpha').textContent    = `Alpha: ${counts.Alpha}`;
+  document.getElementById('chipTerlambat').textContent= `Terlambat: ${counts.Terlambat}`;
+  document.getElementById('chipIzin').textContent     = `Izin: ${counts.Izin}`;
+  document.getElementById('chipSakit').textContent    = `Sakit: ${counts.Sakit}`;
+  document.getElementById('chipBelum').textContent    = `Belum: ${counts.Belum}`;
+}
+
+async function kirimSatu(nis) {
+  const status = statusMap[nis];
+  if (!status) { showToast('Pilih status terlebih dahulu!', 'red'); return; }
+  await submitAbsen(nis, status);
+}
+
+async function kirimSemua() {
+  const entries = Object.entries(statusMap).filter(([nis]) => !submittedSet.has(nis));
+  if (!entries.length) { showToast('Pilih status siswa terlebih dahulu!'); return; }
+  const fab = document.getElementById('fabSubmit');
+  fab.disabled = true;
+  fab.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+  let ok = 0;
+  for (const [nis, status] of entries) {
+    const res = await submitAbsen(nis, status, false);
+    if (res) ok++;
+  }
+  fab.disabled = false;
+  fab.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Semua Yang Dipilih';
+  showToast(`✅ ${ok} absensi berhasil dikirim!`, 'green');
+}
+
+async function submitAbsen(nis, status, showMsg=true) {
+  try {
+    const res  = await fetch('/qr/absen', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nis, status, kelas:KELAS, tanggal:TANGGAL, hari:HARI })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      submittedSet.add(nis);
+      const card = document.getElementById(`card-${nis}`);
+      const warna = {Hadir:'#2e7d32',Alpha:'#c62828',Terlambat:'#f57f17',Izin:'#1565c0',Sakit:'#00796b',Bolos:'#b71c1c'};
+      card.className = `siswa-card submitted-${status==='Hadir'?'hadir':status==='Alpha'?'alpha':'lainnya'}`;
+      const btns = card.querySelector('.status-btns');
+      if (btns) btns.outerHTML = `<span class="submitted-badge" style="background:${warna[status]||'#9e9e9e'}1a;color:${warna[status]||'#666'}"><i class="fas fa-check-circle"></i> ${status}</span>`;
+      if (showMsg) showToast(`✅ ${data.nama} — ${status}`, 'green');
+      updateSummary();
+      return true;
+    } else {
+      if (showMsg) showToast(data.message || 'Gagal!', 'red');
+      return false;
+    }
+  } catch(e) {
+    if (showMsg) showToast('Error: ' + e.message, 'red');
+    return false;
+  }
+}
+
+function filterSiswa() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  document.querySelectorAll('.siswa-card').forEach(card => {
+    const match = card.dataset.nama.includes(q) || card.dataset.nis.includes(q);
+    card.style.display = match ? '' : 'none';
+  });
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+updateSummary();
+</script>
+</body>
+</html>

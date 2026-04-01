@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Error</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)">
+  <div style="text-align:center;padding:40px;max-width:500px">
+    <div style="font-size:64px;margin-bottom:12px">⚠️</div>
+    <h1 style="font-size:48px;font-weight:800;color:var(--accent)">500</h1>
+    <h2 style="font-size:18px;font-weight:600;color:var(--text2);margin:10px 0 8px">Server Error</h2>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;margin:16px 0;font-size:12px;font-family:monospace;color:var(--accent);text-align:left;word-break:break-all">
+      <%= error %>
+    </div>
+    <a href="/dashboard" class="btn btn-primary"><i class="fas fa-home"></i> Kembali ke Dashboard</a>
+  </div>
+</div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>

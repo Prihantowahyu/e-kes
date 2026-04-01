@@ -1,0 +1,223 @@
+<% activePage = 'penyitaan' %>
+<%- include('../../partials/header') %>
+
+<!-- Stats -->
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-boxes" style="color:var(--blue)"></i></div>
+    <div><div class="stat-value"><%= stats.total %></div><div class="stat-label">Total Penyitaan</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-box" style="color:var(--accent)"></i></div>
+    <div><div class="stat-value"><%= stats.belum %></div><div class="stat-label">Belum Dikembalikan</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-box-open" style="color:var(--green)"></i></div>
+    <div><div class="stat-value"><%= stats.kembali %></div><div class="stat-label">Sudah Dikembalikan</div></div>
+  </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+  <form method="GET">
+    <div class="filter-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon"><i class="fas fa-search"></i></span>
+        <input type="text" name="q" class="form-control" placeholder="Cari NIS, nama, atau nama barang..." value="<%= filter.q||'' %>">
+      </div>
+      <select name="status" class="form-control" style="width:190px">
+        <option value="">Semua Status</option>
+        <option value="Belum Dikembalikan" <%= filter.status==='Belum Dikembalikan'?'selected':'' %>>Belum Dikembalikan</option>
+        <option value="Sudah Dikembalikan" <%= filter.status==='Sudah Dikembalikan'?'selected':'' %>>Sudah Dikembalikan</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+      <a href="/penyitaan" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></a>
+      <button type="button" class="btn btn-success btn-sm" onclick="openModal('modalTambah')" style="margin-left:auto">
+        <i class="fas fa-plus"></i> Catat Penyitaan
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-box-open" style="color:var(--accent2)"></i>
+    <span class="card-title">Data Penyitaan Barang (<%= penyitaan.length %>)</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Kode</th><th>Siswa</th><th>Kelas</th><th>Barang</th><th>Tanggal</th><th>Petugas</th><th>Status</th><th>Aksi</th></tr>
+      </thead>
+      <tbody>
+        <% if (penyitaan.length) { penyitaan.forEach((p,i) => { %>
+        <tr>
+          <td class="text-muted text-sm"><%= i+1 %></td>
+          <td class="mono text-sm"><%= p.kode_pst %></td>
+          <td>
+            <a href="/siswa/<%= p.nis %>" style="font-weight:600;color:var(--blue);text-decoration:none"><%= p.nama_siswa %></a>
+            <div class="mono text-sm text-muted"><%= p.nis %></div>
+          </td>
+          <td><span class="badge badge-info"><%= p.kelas %></span></td>
+          <td>
+            <strong><%= p.nama_barang %></strong>
+            <div class="text-sm text-muted"><%= p.jenis_barang %> &bull; <%= p.jumlah_barang %> pcs</div>
+            <% if (p.foto_url) { %>
+            <a href="/uploads/<%= p.foto_url %>" target="_blank" style="font-size:11px;color:var(--blue)"><i class="fas fa-image"></i> Lihat foto</a>
+            <% } %>
+          </td>
+          <td><%= p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+          <td class="text-sm"><%= p.petugas_penyita||'-' %></td>
+          <td>
+            <% if (p.status_pengembalian==='Sudah Dikembalikan') { %>
+              <span class="badge badge-success"><i class="fas fa-check"></i> Sudah Kembali</span>
+              <div class="text-sm text-muted" style="margin-top:2px"><%= p.tanggal_pengambilan ? new Date(p.tanggal_pengambilan).toLocaleDateString('id-ID') : '' %></div>
+            <% } else { %>
+              <span class="badge badge-danger"><i class="fas fa-clock"></i> Belum Kembali</span>
+            <% } %>
+          </td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <% if (p.status_pengembalian !== 'Sudah Dikembalikan') { %>
+              <button class="btn btn-success btn-xs" onclick="openKembalikan('<%= p.id %>','<%= p.nama_siswa %>','<%= p.nama_barang %>')" title="Kembalikan">
+                <i class="fas fa-undo"></i>
+              </button>
+              <% } %>
+              <form action="/penyitaan/<%= p.id %>?_method=DELETE" method="POST" id="delpst-<%= p.id %>">
+                <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('delpst-<%= p.id %>','Hapus data penyitaan ini?')"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <% }) } else { %>
+        <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📦</div><h4>Tidak ada data penyitaan</h4></div></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Tambah -->
+<div class="modal-overlay" id="modalTambah">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span class="modal-title"><i class="fas fa-plus"></i> Catat Penyitaan Barang</span>
+      <button class="modal-close" onclick="closeModal('modalTambah')">✕</button>
+    </div>
+    <form action="/penyitaan" method="POST" enctype="multipart/form-data">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Siswa <span style="color:var(--accent)">*</span></label>
+          <select name="nis" class="form-control" required>
+            <option value="">-- Pilih Siswa --</option>
+            <% siswa.forEach(s => { %>
+              <option value="<%= s.nis %>"><%= s.nis %> — <%= s.nama %> (<%= s.kelas %>)</option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label class="form-label">Jenis Barang <span style="color:var(--accent)">*</span></label>
+            <select name="jenis_barang" class="form-control" required>
+              <% ['HP/Smartphone','Headset/Earphone','Rokok','Vape','Senjata Tajam','Kosmetik','Makanan','Lainnya'].forEach(j => { %>
+                <option value="<%= j %>"><%= j %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nama Barang <span style="color:var(--accent)">*</span></label>
+            <input type="text" name="nama_barang" class="form-control" placeholder="Contoh: iPhone 13 Hitam" required>
+          </div>
+        </div>
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label class="form-label">Jumlah</label>
+            <input type="number" name="jumlah_barang" class="form-control" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kondisi</label>
+            <select name="kondisi" class="form-control">
+              <option>Baik</option><option>Sedang</option><option>Rusak</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal</label>
+            <input type="date" name="tanggal" class="form-control" value="<%= new Date().toISOString().split('T')[0] %>">
+          </div>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label class="form-label">Tempat Penyitaan</label>
+            <input type="text" name="tempat_penyitaan" class="form-control" placeholder="Contoh: Depan Gerbang">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Petugas Penyita</label>
+            <select name="petugas_penyita" class="form-control">
+              <option value="<%= user.nama %>"><%= user.nama %></option>
+              <% petugas.forEach(p => { %><option value="<%= p.nama %>"><%= p.nama %></option><% }) %>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan</label>
+          <textarea name="catatan" class="form-control" rows="2" placeholder="Catatan tambahan..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foto Barang</label>
+          <input type="file" name="foto" class="form-control" accept="image/*">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalTambah')">Batal</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Kembalikan -->
+<div class="modal-overlay" id="modalKembalikan">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title"><i class="fas fa-undo"></i> Pengembalian Barang</span>
+      <button class="modal-close" onclick="closeModal('modalKembalikan')">✕</button>
+    </div>
+    <form action="" method="POST" id="formKembalikan">
+      <div class="modal-body">
+        <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px" id="kembaliInfo"></div>
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select name="status_pengembalian" class="form-control">
+              <option value="Sudah Dikembalikan">Sudah Dikembalikan</option>
+              <option value="Dibuang">Dibuang</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal Pengambilan</label>
+            <input type="date" name="tanggal_pengambilan" class="form-control" value="<%= new Date().toISOString().split('T')[0] %>">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan Pengambilan</label>
+          <textarea name="catatan_pengambilan" class="form-control" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalKembalikan')">Batal</button>
+        <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Konfirmasi Pengembalian</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openKembalikan(id, nama, barang) {
+  document.getElementById('formKembalikan').action = `/penyitaan/${id}/kembalikan?_method=PUT`;
+  document.getElementById('kembaliInfo').innerHTML = `<strong>${barang}</strong> &mdash; milik <strong>${nama}</strong>`;
+  openModal('modalKembalikan');
+}
+</script>
+
+<%- include('../../partials/footer') %>

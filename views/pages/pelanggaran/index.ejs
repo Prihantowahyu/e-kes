@@ -1,0 +1,206 @@
+<% activePage = 'pelanggaran' %>
+<%- include('../../partials/header') %>
+
+<!-- Filter -->
+<div class="card mb-4">
+  <form method="GET">
+    <div class="filter-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon"><i class="fas fa-search"></i></span>
+        <input type="text" name="q" class="form-control" placeholder="Cari NIS, nama, kelas..." value="<%= filter.q||'' %>">
+      </div>
+      <select name="jenis" class="form-control" style="width:140px">
+        <option value="">Semua Jenis</option>
+        <% ['Alpha','Terlambat','Bolos','Izin','Sakit','Lainnya'].forEach(j => { %>
+          <option value="<%= j %>" <%= filter.jenis===j?'selected':'' %>><%= j %></option>
+        <% }) %>
+      </select>
+      <select name="status" class="form-control" style="width:170px">
+        <option value="">Semua Status</option>
+        <option value="Belum Dikonfirmasi" <%= filter.status==='Belum Dikonfirmasi'?'selected':'' %>>Belum Dikonfirmasi</option>
+        <option value="Terkonfirmasi"      <%= filter.status==='Terkonfirmasi'?'selected':'' %>>Terkonfirmasi</option>
+      </select>
+      <input type="date" name="dari"   class="form-control" style="width:140px" value="<%= filter.dari||'' %>" title="Dari tanggal">
+      <input type="date" name="sampai" class="form-control" style="width:140px" value="<%= filter.sampai||'' %>" title="Sampai tanggal">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+      <a href="/pelanggaran" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></a>
+      <button type="button" class="btn btn-success btn-sm" onclick="openModal('modalTambah')" style="margin-left:auto">
+        <i class="fas fa-plus"></i> Input Pelanggaran
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-exclamation-triangle" style="color:var(--accent)"></i>
+    <span class="card-title">Rekam Pelanggaran (<%= pelanggaran.length %>)</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Kode</th><th>Siswa</th><th>Kelas</th><th>Jenis</th><th>Tanggal</th><th>Waktu</th><th>Status</th><th>Input Oleh</th><th class="no-print">Aksi</th></tr>
+      </thead>
+      <tbody id="tbody_pelanggaran">
+        <% if (pelanggaran.length) { %>
+          <% pelanggaran.forEach((p, i) => { %>
+          <tr>
+            <td class="text-muted text-sm"><%= i+1 %></td>
+            <td class="mono text-sm"><%= p.kode %></td>
+            <td>
+              <a href="/siswa/<%= p.nis %>" style="font-weight:600;color:var(--blue);text-decoration:none"><%= p.nama_siswa %></a>
+              <div class="mono text-sm text-muted"><%= p.nis %></div>
+            </td>
+            <td><span class="badge badge-info"><%= p.kelas %></span></td>
+            <td>
+              <% const jB={Alpha:'danger',Terlambat:'warning',Bolos:'danger',Izin:'info',Sakit:'teal',Lainnya:'gray'} %>
+              <span class="badge badge-<%= jB[p.jenis_pelanggaran]||'gray' %>"><%= p.jenis_pelanggaran %></span>
+            </td>
+            <td><%= p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+            <td class="mono text-sm"><%= p.waktu ? String(p.waktu).substring(0,5) : '-' %></td>
+            <td>
+              <% if (p.status==='Terkonfirmasi') { %>
+                <span class="badge badge-success"><i class="fas fa-check"></i> Terkonfirmasi</span>
+              <% } else { %>
+                <span class="badge badge-warning"><i class="fas fa-clock"></i> Pending</span>
+              <% } %>
+            </td>
+            <td class="text-sm"><%= p.input_oleh||'-' %></td>
+            <td class="no-print">
+              <div style="display:flex;gap:4px">
+                <% if (p.status !== 'Terkonfirmasi') { %>
+                <button class="btn btn-success btn-xs" onclick="openKonfirmasi('<%= p.id %>','<%= (p.nama_siswa||'').replace(/'/g,"\\'") %>','<%= (p.jenis_pelanggaran||'').replace(/'/g,"\\'") %>')" title="Konfirmasi">
+                  <i class="fas fa-check"></i>
+                </button>
+                <% } %>
+                <% if (p.foto_url) { %>
+                <a href="/uploads/<%= p.foto_url %>" target="_blank" class="btn btn-info btn-xs" title="Lihat Foto">
+                  <i class="fas fa-image"></i>
+                </a>
+                <% } %>
+                <% if (p.nama_wali) { %>
+                <button class="btn btn-warning btn-xs" title="Kirim WA ke Wali"
+                  onclick="kirimNotifWA('<%= p.nis %>','pelanggaran','<%= String(p.id).replace(/'/g,"\\'") %>')">
+                  <i class="fab fa-whatsapp"></i>
+                </button>
+                <% } %>
+                <form action="/pelanggaran/<%= p.id %>?_method=DELETE" method="POST" id="delp-<%= p.id %>">
+                  <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('delp-<%= p.id %>','Hapus pelanggaran ini?')" title="Hapus">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <% }) %>
+        <% } else { %>
+          <tr><td colspan="10"><div class="empty-state"><div class="empty-icon">✅</div><h4>Tidak ada data pelanggaran</h4></div></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Tambah Pelanggaran -->
+<div class="modal-overlay" id="modalTambah">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title"><i class="fas fa-plus"></i> Input Pelanggaran</span>
+      <button class="modal-close" onclick="closeModal('modalTambah')">✕</button>
+    </div>
+    <form action="/pelanggaran" method="POST" enctype="multipart/form-data">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Siswa <span style="color:var(--accent)">*</span></label>
+          <select name="nis" class="form-control" required id="selectSiswa">
+            <option value="">-- Pilih Siswa --</option>
+            <% siswa.forEach(s => { %>
+              <option value="<%= s.nis %>"><%= s.nis %> — <%= s.nama %> (<%= s.kelas %>)</option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-row form-row-2">
+          <div class="form-group">
+            <label class="form-label">Jenis Pelanggaran <span style="color:var(--accent)">*</span></label>
+            <select name="jenis_pelanggaran" class="form-control" required>
+              <% ['Alpha','Terlambat','Bolos','Izin','Sakit','Lainnya'].forEach(j => { %>
+                <option value="<%= j %>"><%= j %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tanggal</label>
+            <input type="date" name="tanggal" class="form-control" value="<%= new Date().toISOString().split('T')[0] %>">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Input Oleh</label>
+          <select name="input_oleh" class="form-control">
+            <option value="<%= user.nama %>"><%= user.nama %></option>
+            <% petugas.forEach(p => { %>
+              <option value="<%= p.nama %>"><%= p.nama %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan</label>
+          <textarea name="catatan" class="form-control" rows="2" placeholder="Catatan tambahan..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Foto Bukti</label>
+          <input type="file" name="foto" class="form-control" accept="image/*">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalTambah')">Batal</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi -->
+<div class="modal-overlay" id="modalKonfirmasi">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title"><i class="fas fa-check-circle"></i> Konfirmasi Pelanggaran</span>
+      <button class="modal-close" onclick="closeModal('modalKonfirmasi')">✕</button>
+    </div>
+    <form action="" method="POST" enctype="multipart/form-data" id="formKonfirmasi">
+      <div class="modal-body">
+        <div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:16px">
+          <div id="konfirmasiInfo" style="font-size:13.5px"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Upload Foto Bukti (opsional)</label>
+          <input type="file" name="foto" class="form-control" accept="image/*">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalKonfirmasi')">Batal</button>
+        <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Konfirmasi</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+  <div id="tbody_pelanggaran_pag" class="pagination"></div>
+  <a href="/laporan?dari=&sampai=" class="btn btn-success btn-sm no-print">
+    <i class="fas fa-file-excel"></i> Export Excel
+  </a>
+</div>
+
+<script>
+function openKonfirmasi(id, nama, jenis) {
+  document.getElementById('formKonfirmasi').action = `/pelanggaran/${id}/konfirmasi`;
+  document.getElementById('konfirmasiInfo').innerHTML =
+    `<strong>${nama}</strong> — <span class="badge badge-warning">${jenis}</span>`;
+  openModal('modalKonfirmasi');
+}
+// Init pagination
+initPagination('tbody_pelanggaran', 20);
+</script>
+
+<%- include('../../partials/footer') %>

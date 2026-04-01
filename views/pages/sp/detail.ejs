@@ -1,0 +1,99 @@
+<% activePage = 'sp' %>
+<%- include('../../partials/header') %>
+
+<div style="max-width:800px;margin:0 auto">
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <a href="/sp" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Kembali</a>
+    <button onclick="window.print()" class="btn btn-outline btn-sm"><i class="fas fa-print"></i> Cetak</button>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header">
+      <i class="fas fa-file-alt" style="color:#7b1fa2"></i>
+      <span class="card-title">Detail Surat Peringatan</span>
+      <% const spColor={'SP 1':'warning','SP 2':'orange','SP 3':'danger','SP Tambahan':'danger'} %>
+      <span class="badge badge-<%= spColor[sp.tipe_sp]||'gray' %>" style="font-size:13px;padding:5px 12px"><%= sp.tipe_sp %></span>
+    </div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:10px">Data Siswa</div>
+          <table style="font-size:13.5px;width:100%">
+            <tr><td style="padding:4px 0;color:var(--text2);width:120px">NIS</td><td class="mono"><strong><%= sp.nis %></strong></td></tr>
+            <tr><td style="padding:4px 0;color:var(--text2)">Nama</td><td><strong><%= sp.nama_siswa %></strong></td></tr>
+            <tr><td style="padding:4px 0;color:var(--text2)">Kelas</td><td><%= sp.kelas %></td></tr>
+            <tr><td style="padding:4px 0;color:var(--text2)">Nama Wali</td><td><%= sp.nama_wali||'-' %></td></tr>
+            <tr><td style="padding:4px 0;color:var(--text2)">No. Wali</td><td class="mono"><%= sp.no_wali||'-' %></td></tr>
+          </table>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:10px">Data SP</div>
+          <table style="font-size:13.5px;width:100%">
+            <tr><td style="padding:4px 0;color:var(--text2);width:140px">Kode SP</td><td class="mono"><strong><%= sp.kode_sp %></strong></td></tr>
+            <tr><td style="padding:4px 0;color:var(--text2)">Tipe</td><td><span class="badge badge-<%= spColor[sp.tipe_sp]||'gray' %>"><%= sp.tipe_sp %></span></td></tr>
+            <tr><td style="padding:4px 0;color:var(--text2)">Tanggal</td><td><strong><%= sp.tanggal_sp ? new Date(sp.tanggal_sp).toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) : '-' %></strong></td></tr>
+            <tr><td style="padding:4px 0;color:var(--text2)">Dibuat Oleh</td><td><%= sp.dibuat_oleh||'-' %></td></tr>
+            <tr><td style="padding:4px 0;color:var(--text2)">Status</td><td><% const stB={Aktif:'danger',Selesai:'success',Dibatalkan:'gray'} %><span class="badge badge-<%= stB[sp.status]||'gray' %>"><%= sp.status %></span></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <% if (sp.pelanggaran_pemicu) { %>
+      <div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:8px;border-left:4px solid var(--accent)">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px">PELANGGARAN PEMICU</div>
+        <div style="font-size:13.5px"><%= sp.pelanggaran_pemicu %></div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Catatan penanganan -->
+  <div class="card mb-4">
+    <div class="card-header"><i class="fas fa-comments" style="color:var(--blue)"></i><span class="card-title">Catatan Penanganan</span></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <% const catatanFields = [
+          {key:'catatan_siswa',label:'Catatan Siswa',icon:'🧑'},
+          {key:'catatan_ortu',label:'Catatan Orang Tua',icon:'👨‍👩'},
+          {key:'catatan_wali_kelas',label:'Catatan Wali Kelas',icon:'👩‍🏫'},
+          {key:'catatan_tatib',label:'Catatan Tatib',icon:'🏫'},
+          {key:'catatan_koord_tatib',label:'Catatan Koord. Tatib',icon:'📋'},
+          {key:'catatan_waka_kesiswaan',label:'Catatan Waka Kesiswaan',icon:'🏛️'},
+          {key:'catatan_kepsek',label:'Catatan Kepala Sekolah',icon:'🎓'},
+        ] %>
+        <% catatanFields.forEach(f => { %>
+        <div style="background:var(--bg);border-radius:8px;padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px"><%= f.icon %> <%= f.label.toUpperCase() %></div>
+          <div style="font-size:13px;color:<%= sp[f.key] ? 'var(--text)' : 'var(--text3)' %>">
+            <%= sp[f.key] || '—' %>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Riwayat pelanggaran -->
+  <div class="card">
+    <div class="card-header"><i class="fas fa-history" style="color:var(--accent)"></i><span class="card-title">Riwayat Pelanggaran Siswa</span></div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Jenis</th><th>Tanggal</th><th>Status</th><th>Catatan</th></tr></thead>
+        <tbody>
+          <% if (pelanggaran.length) { pelanggaran.forEach(p => { %>
+          <tr>
+            <td><% const jB={Alpha:'danger',Terlambat:'warning',Bolos:'danger',Izin:'info',Sakit:'teal',Lainnya:'gray'} %><span class="badge badge-<%= jB[p.jenis_pelanggaran]||'gray' %>"><%= p.jenis_pelanggaran %></span></td>
+            <td><%= p.tanggal ? new Date(p.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+            <td><span class="badge <%= p.status==='Terkonfirmasi'?'badge-success':'badge-warning' %>"><%= p.status %></span></td>
+            <td class="text-sm"><%= p.catatan||'-' %></td>
+          </tr>
+          <% }) } else { %>
+          <tr><td colspan="4" class="text-center text-muted" style="padding:20px">Tidak ada data</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

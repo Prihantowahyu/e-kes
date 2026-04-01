@@ -1,0 +1,96 @@
+<% activePage = 'sp' %>
+<%- include('../../partials/header') %>
+
+<div style="display:flex;gap:10px;margin-bottom:16px">
+  <a href="/sp" class="btn btn-primary btn-sm"><i class="fas fa-list"></i> Daftar SP</a>
+  <a href="/sp/rekap" class="btn btn-outline btn-sm"><i class="fas fa-chart-bar"></i> Rekap & Buat SP</a>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+  <form method="GET">
+    <div class="filter-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon"><i class="fas fa-search"></i></span>
+        <input type="text" name="q" class="form-control" placeholder="Cari NIS atau nama siswa..." value="<%= filter.q||'' %>">
+      </div>
+      <select name="tipe" class="form-control" style="width:140px">
+        <option value="">Semua Tipe</option>
+        <% ['SP 1','SP 2','SP 3','SP Tambahan'].forEach(t => { %>
+          <option value="<%= t %>" <%= filter.tipe===t?'selected':'' %>><%= t %></option>
+        <% }) %>
+      </select>
+      <select name="status" class="form-control" style="width:140px">
+        <option value="">Semua Status</option>
+        <% ['Aktif','Selesai','Dibatalkan'].forEach(s => { %>
+          <option value="<%= s %>" <%= filter.status===s?'selected':'' %>><%= s %></option>
+        <% }) %>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+      <a href="/sp" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></a>
+    </div>
+  </form>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-file-alt" style="color:#7b1fa2"></i>
+    <span class="card-title">Surat Peringatan (<%= sp.length %>)</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Kode SP</th><th>Siswa</th><th>Kelas</th><th>Tipe SP</th><th>Tanggal</th><th>Dibuat Oleh</th><th>Status</th><th>Aksi</th></tr>
+      </thead>
+      <tbody>
+        <% if (sp.length) { sp.forEach((s,i) => { %>
+        <tr>
+          <td class="text-muted text-sm"><%= i+1 %></td>
+          <td class="mono text-sm"><%= s.kode_sp %></td>
+          <td>
+            <a href="/siswa/<%= s.nis %>" style="font-weight:600;color:var(--blue);text-decoration:none"><%= s.nama_siswa %></a>
+            <div class="mono text-sm text-muted"><%= s.nis %></div>
+          </td>
+          <td><span class="badge badge-info"><%= s.kelas %></span></td>
+          <td>
+            <% const spColor = {'SP 1':'warning','SP 2':'orange','SP 3':'danger','SP Tambahan':'danger'} %>
+            <span class="badge badge-<%= spColor[s.tipe_sp]||'gray' %>"><%= s.tipe_sp %></span>
+          </td>
+          <td><%= s.tanggal_sp ? new Date(s.tanggal_sp).toLocaleDateString('id-ID') : '-' %></td>
+          <td class="text-sm"><%= s.dibuat_oleh||'-' %></td>
+          <td>
+            <% const stBadge={Aktif:'danger',Selesai:'success',Dibatalkan:'gray'} %>
+            <span class="badge badge-<%= stBadge[s.status]||'gray' %>"><%= s.status %></span>
+          </td>
+          <td>
+              <div style="display:flex;gap:4px">
+              <a href="/sp/<%= s.id %>" class="btn btn-secondary btn-xs" title="Detail"><i class="fas fa-eye"></i></a>
+              <a href="/laporan/cetak-sp/<%= s.id %>" target="_blank" class="btn btn-info btn-xs" title="Cetak PDF"><i class="fas fa-print"></i></a>
+              <% if (s.no_wali) { %>
+              <button class="btn btn-warning btn-xs" title="Kirim WA ke Wali"
+                onclick="kirimNotifWA('<%= s.nis %>','sp','<%= s.id %>')">
+                <i class="fab fa-whatsapp"></i>
+              </button>
+              <% } %>
+              <% if (s.status === 'Aktif') { %>
+              <form action="/sp/<%= s.id %>/status?_method=PUT" method="POST" style="display:inline">
+                <input type="hidden" name="status" value="Selesai">
+                <button type="submit" class="btn btn-success btn-xs" title="Tandai Selesai"><i class="fas fa-check"></i></button>
+              </form>
+              <% } %>
+              <form action="/sp/<%= s.id %>?_method=DELETE" method="POST" id="delsp-<%= s.id %>">
+                <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('delsp-<%= s.id %>','Hapus SP ini?')"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <% }) } else { %>
+        <tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📄</div><h4>Belum ada surat peringatan</h4><p>Buka <a href="/sp/rekap">Rekap SP</a> untuk melihat siswa yang perlu mendapat SP</p></div></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

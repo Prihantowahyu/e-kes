@@ -1,0 +1,77 @@
+<% activePage = 'profil' %>
+<%- include('../../partials/header') %>
+
+<div style="display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start">
+
+  <!-- Info Profil -->
+  <div>
+    <div class="card mb-4">
+      <div class="card-body" style="text-align:center;padding:28px">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--navy-mid));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;margin:0 auto 14px">
+          <%= user.nama.charAt(0).toUpperCase() %>
+        </div>
+        <h3 style="font-size:16px;font-weight:700"><%= user.nama %></h3>
+        <div class="text-muted text-sm">@<%= user.username %></div>
+        <div style="margin-top:8px">
+          <% const roleBadge={admin:'danger',tatib:'warning',wali_kelas:'info',petugas:'gray'} %>
+          <span class="badge badge-<%= roleBadge[user.role]||'gray' %>"><%= user.role.replace('_',' ') %></span>
+          <% if (user.kelas) { %><span class="badge badge-info" style="margin-left:4px"><%= user.kelas %></span><% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ganti Password -->
+    <div class="card">
+      <div class="card-header"><i class="fas fa-lock" style="color:var(--blue)"></i><span class="card-title">Ganti Password</span></div>
+      <div class="card-body">
+        <form action="/profil/ganti-password" method="POST">
+          <div class="form-group">
+            <label class="form-label">Password Lama</label>
+            <input type="password" name="password_lama" class="form-control" placeholder="Password saat ini" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password Baru</label>
+            <input type="password" name="password_baru" class="form-control" placeholder="Min. 6 karakter" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Konfirmasi Password Baru</label>
+            <input type="password" name="password_konfirmasi" class="form-control" placeholder="Ulangi password baru" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-save"></i> Simpan Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Riwayat Aktivitas -->
+  <div class="card">
+    <div class="card-header">
+      <i class="fas fa-history" style="color:var(--blue)"></i>
+      <span class="card-title">Riwayat Aktivitas Saya</span>
+      <% if (user.role === 'admin') { %>
+      <a href="/profil/log-aktivitas" class="btn btn-outline btn-sm">Log Semua User</a>
+      <% } %>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Waktu</th><th>Aksi</th><th>Tabel</th><th>IP</th></tr></thead>
+        <tbody>
+          <% if (logs.length) { logs.forEach(l => { %>
+          <tr>
+            <td class="text-sm text-muted mono" style="white-space:nowrap">
+              <%= new Date(l.created_at).toLocaleString('id-ID') %>
+            </td>
+            <td><strong><%= l.aksi %></strong><% if(l.detail){%><div class="text-sm text-muted"><%= l.detail.substring(0,60) %></div><%}%></td>
+            <td class="text-sm"><% if(l.tabel){%><span class="badge badge-info"><%= l.tabel %></span><%}else{%>-<%}%></td>
+            <td class="mono text-sm text-muted"><%= l.ip_address||'-' %></td>
+          </tr>
+          <% }) } else { %>
+          <tr><td colspan="4"><div class="empty-state" style="padding:24px"><div class="empty-icon">📋</div><h4>Belum ada aktivitas</h4></div></td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/footer') %>

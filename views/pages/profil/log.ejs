@@ -1,0 +1,58 @@
+<% activePage = 'profil' %>
+<%- include('../../partials/header') %>
+
+<div class="card mb-4">
+  <form method="GET">
+    <div class="filter-bar">
+      <div class="search-input-wrap">
+        <span class="search-icon"><i class="fas fa-search"></i></span>
+        <input type="text" name="q" class="form-control" placeholder="Cari username, aksi, atau detail..." value="<%= filter.q||'' %>">
+      </div>
+      <select name="tabel" class="form-control" style="width:150px">
+        <option value="">Semua Tabel</option>
+        <% ['users','siswa','pelanggaran','surat_peringatan','penyitaan','kehadiran','jadwal_piket','rapor_perilaku'].forEach(t => { %>
+          <option value="<%= t %>" <%= filter.tabel===t?'selected':'' %>><%= t %></option>
+        <% }) %>
+      </select>
+      <input type="date" name="dari"   class="form-control" style="width:140px" value="<%= filter.dari||'' %>">
+      <input type="date" name="sampai" class="form-control" style="width:140px" value="<%= filter.sampai||'' %>">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i></button>
+      <a href="/profil/log-aktivitas" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <i class="fas fa-history" style="color:var(--blue)"></i>
+    <span class="card-title">Log Aktivitas Sistem (<%= logs.length %>)</span>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Tabel</th><th>Ref ID</th><th>Detail</th><th>IP</th></tr></thead>
+      <tbody id="tbody_log">
+        <% if (logs.length) { logs.forEach(l => { %>
+        <tr>
+          <td class="mono text-sm" style="white-space:nowrap"><%= new Date(l.created_at).toLocaleString('id-ID') %></td>
+          <td>
+            <strong><%= l.nama||'-' %></strong>
+            <div class="mono text-sm text-muted"><%= l.username||'-' %></div>
+          </td>
+          <td><strong><%= l.aksi %></strong></td>
+          <td><% if(l.tabel){%><span class="badge badge-info"><%= l.tabel %></span><%}else{%>-<%}%></td>
+          <td class="mono text-sm"><%= l.ref_id||'-' %></td>
+          <td class="text-sm text-muted"><%= l.detail ? l.detail.substring(0,60)+(l.detail.length>60?'...':'') : '-' %></td>
+          <td class="mono text-sm text-muted"><%= l.ip_address||'-' %></td>
+        </tr>
+        <% }) } else { %>
+        <tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><h4>Belum ada log</h4></div></td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+    <div id="tbody_log_pag" class="pagination"></div>
+  </div>
+</div>
+<script>initPagination('tbody_log', 25);</script>
+<%- include('../../partials/footer') %>
